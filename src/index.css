@@ -1,68 +1,64 @@
-:root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
+@import "tailwindcss";
 
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
-
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
-}
-
+html,
 body {
-  margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
+  @apply w-full max-w-full overflow-x-hidden m-0 p-0;
 }
 
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
+.container {
+  @apply max-w-full overflow-hidden grid grid-cols-[200px_10fr] gap-[2px] bg-gray-200;
+  grid-template-areas:
+    "menu content"
 }
 
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
-  cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
+.container>div.menu {
+  @apply bg-blue-300 w-[200px] h-screen;
+  grid-area: menu;
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
+.container>div.content {
+  @apply flex flex-col w-full bg-amber-500 overflow-y-auto h-screen flex flex-col items-center justify-center;
+  grid-area: content;
+}
+
+
+@media screen and (max-width: 1023px) and (min-width: 769px) {
+  .container {
+    @apply w-full max-w-full overflow-hidden grid bg-gray-200 gap-[2px];
+    grid-template-columns: 100px 1fr;
+    /* Menu 100px + content tự co giãn */
+    grid-template-areas: "menu content";
   }
-  a:hover {
-    color: #747bff;
+
+  .container>div.menu {
+    @apply w-[100px] bg-blue-300;
+    grid-area: menu;
   }
-  button {
-    background-color: #f9f9f9;
+
+  .container>div.content {
+    @apply w-full max-w-full bg-amber-500;
+    grid-area: content;
+  }
+}
+
+
+@media screen and (max-width: 768px) {
+  .container {
+    @apply max-w-full overflow-y-auto grid bg-gray-200 gap-[2px];
+    grid-template-rows: 1fr 100px;
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "content"
+      "menu";
+  }
+
+  .container div.menu {
+    @apply w-full h-[100px] bg-blue-300 fixed bottom-0 left-0 z-50;
+    grid-area: menu;
+  }
+
+  .container div.content {
+    @apply w-full max-w-full h-full overflow-y-hidden bg-amber-500;
+    grid-area: content;
   }
 }
