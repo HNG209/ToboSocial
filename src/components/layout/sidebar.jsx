@@ -5,11 +5,11 @@ import {
     CompassOutlined,
     VideoCameraOutlined,
     MessageOutlined,
-    HeartOutlined,
     PlusOutlined,
     UserOutlined,
     GlobalOutlined,
     MenuOutlined,
+    BellOutlined,
 } from "@ant-design/icons";
 import { DiVisualstudio } from "react-icons/di";
 import { NavLink } from "react-router-dom";
@@ -21,7 +21,7 @@ const Sidebar = () => {
         { icon: <CompassOutlined />, label: "Explore", to: "/explore" },
         { icon: <VideoCameraOutlined />, label: "Reels", to: "/reels" },
         { icon: <MessageOutlined />, label: "Messages", to: "/messages" },
-        { icon: <HeartOutlined />, label: "Notifications", to: "/notifications" },
+        { icon: <BellOutlined />, label: "Notifications", to: "/notifications" },
         { icon: <PlusOutlined />, label: "Create", to: "/create" },
         { icon: <UserOutlined />, label: "Profile", to: "/profile" },
         { icon: <DiVisualstudio />, label: "AI Studio", to: "/studio" },
@@ -31,7 +31,7 @@ const Sidebar = () => {
 
     return (
         <aside className="hidden md:flex flex-col w-16 lg:w-64 bg-white border-r shadow-sm p-4">
-            <div className="text-center font-bold mb-8 text-lg hidden lg:block">Instagram</div>
+            <div className="text-center font-bold mb-8 text-lg hidden lg:block">Tobo Social</div>
             <nav className="flex flex-col gap-6 items-center lg:items-start">
                 {menuItems.map((item, idx) => (
                     <NavLink
