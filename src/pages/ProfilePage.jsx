@@ -1,4 +1,6 @@
 import { Avatar, Button } from "antd";
+import ProfileMenu from "../components/layout/ProfileMenu";
+import PostThumb from "../components/layout/PostThumb";
 
 const ProfilePage = () => {
     return (
@@ -31,30 +33,44 @@ const ProfilePage = () => {
                     <p className="text-gray-500 mt-2">Bio: This is a sample bio.</p>
                 </div>
             </div>
+
+            <div>
+                <ProfileMenu />
+            </div>
+
             <div>
                 {/* <h2 className="text-2xl text-center mt-4">Posts</h2> */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
-                    {/* Map through posts and display them here */}
-                    <div className="bg-white shadow-md rounded-lg p-4">
-                        <img src="https://i.pravatar.cc/150?u=user" alt="post" className="w-full h-auto rounded-lg" />
-                        <p className="text-gray-500 mt-2">This is a sample post description.</p>
+                <div className="grid grid-cols-3 gap-4 p-4">
+                {/* Map through posts and display them here */}
+                    <PostThumb post={{}} />
+                    <PostThumb post={{}} />
+                    <PostThumb post={{}} />
+                    <PostThumb post={{}} />
+                    <PostThumb post={{}} />
+                    <PostThumb post={{}} />
+                    <PostThumb post={{}} />
+                    <PostThumb post={{}} />
+                    {/* <div className="bg-white shadow-md rounded-lg p-4">
+                        <img
+                            src="https://i.pravatar.cc/150?u=user1"
+                            alt="post"
+                            className="w-full h-auto rounded-lg"
+                        />
                     </div>
                     <div className="bg-white shadow-md rounded-lg p-4">
-                        <img src="https://i.pravatar.cc/150?u=user" alt="post" className="w-full h-auto rounded-lg" />
-                        <p className="text-gray-500 mt-2">This is a sample post description.</p>
+                        <img
+                            src="https://i.pravatar.cc/150?u=user2"
+                            alt="post"
+                            className="w-full h-auto rounded-lg"
+                        />
                     </div>
                     <div className="bg-white shadow-md rounded-lg p-4">
-                        <img src="https://i.pravatar.cc/150?u=user" alt="post" className="w-full h-auto rounded-lg" />
-                        <p className="text-gray-500 mt-2">This is a sample post description.</p>
-                    </div>
-                    <div className="bg-white shadow-md rounded-lg p-4">
-                        <img src="https://i.pravatar.cc/150?u=user" alt="post" className="w-full h-auto rounded-lg" />
-                        <p className="text-gray-500 mt-2">This is a sample post description.</p>
-                    </div>
-                    <div className="bg-white shadow-md rounded-lg p-4">
-                        <img src="https://i.pravatar.cc/150?u=user" alt="post" className="w-full h-auto rounded-lg" />
-                        <p className="text-gray-500 mt-2">This is a sample post description.</p>
-                    </div>
+                        <img
+                            src="https://i.pravatar.cc/150?u=user3"
+                            alt="post"
+                            className="w-full h-auto rounded-lg"
+                        />
+                    </div> */}
                 </div>
             </div>
         </>
