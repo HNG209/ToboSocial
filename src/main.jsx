@@ -12,6 +12,8 @@ import MessagesPage from "./pages/MessagePage";
 import ProfilePage from "./pages/ProfilePage";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
+import ProfileEditPage from "./pages/ProfileEditPage";
+import ChangePassword from "./pages/ChangePassword";
 
 
 const router = createBrowserRouter([
@@ -43,6 +45,22 @@ const router = createBrowserRouter([
         element: (
           // <PrivateRoute>
           <ProfilePage />
+          // </PrivateRoute>
+        ),
+      },
+      {
+        path: "/edit-profile",
+        element: (
+          // <PrivateRoute>
+          <ProfileEditPage />
+          // </PrivateRoute>
+        ),
+      },
+      {
+        path: "change-password",
+        element: (
+          // <PrivateRoute>
+          <ChangePassword />
           // </PrivateRoute>
         ),
       },

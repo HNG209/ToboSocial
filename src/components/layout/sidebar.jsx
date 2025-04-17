@@ -26,7 +26,7 @@ const Sidebar = () => {
         { icon: <UserOutlined />, label: "Profile", to: "/profile" },
         { icon: <DiVisualstudio />, label: "AI Studio", to: "/studio" },
         { icon: <GlobalOutlined />, label: "Threads", to: "/threads" },
-        { icon: <MenuOutlined />, label: "More", to: "/more" },
+        { icon: <MenuOutlined />, label: "More", to: "/more" }
     ];
 
     return (
