@@ -7,13 +7,7 @@ const UserIdContext = createContext();
 const SetUserIdContext = createContext();
 
 // Custom hooks to use the contexts
-const useUserId = () => {
-  const context = useContext(UserIdContext);
-  if (!context) {
-    throw new Error("useUserId must be used within a UserIdProvider");
-  }
-  return context;
-};
+
 
 const useSetUserId = () => {
   const context = useContext(SetUserIdContext);
