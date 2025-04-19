@@ -92,8 +92,7 @@ function LoginPage() {
         setShowModal(true);
       }
     } catch (error) {
-      console.error("Login error:", error);
-      setModalMessage("Có lỗi xảy ra. Vui lòng thử lại");
+      setModalMessage("Có lỗi xảy ra. Vui lòng thử lại" + error);
       setShowModal(true);
     } finally {
       setIsLoading(false);
@@ -160,9 +159,9 @@ function LoginPage() {
         </form>
 
         <div className="mt-4 text-center text-sm">
-          <a href="#" className="text-blue-600 hover:underline">
+          <Link to="/forgetpassword" className="text-blue-600 hover:underline">
             Forgot Password?
-          </a>
+          </Link>
         </div>
 
         <div className="mt-2 text-center text-sm">

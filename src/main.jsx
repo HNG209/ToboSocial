@@ -14,6 +14,7 @@ import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import ProfileEditPage from "./pages/ProfileEditPage";
 import ChangePassword from "./pages/ChangePassword";
+import ForgetPasswordPage from "./pages/ForgetPasswordPage";
 
 
 
@@ -76,6 +77,10 @@ const router = createBrowserRouter([
     path: "/register",
     element: <RegisterPage />,
   },
+  {
+    path: "/forgetpassword",
+    element: (<ForgetPasswordPage/>)
+  }
 ]);
 
 ReactDOM.createRoot(document.getElementById("root")).render(
