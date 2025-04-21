@@ -23,7 +23,7 @@ const ProfilePage = () => {
     return (
         <>
             <div className="relative flex flex-col items-center justify-center w-full bg-gray-50 mt-2">
-                <Avatar size={120} className="absolute top-0 left-0 z-10 m-4" src={user.avatar || `https://i.pravatar.cc/150?u=user`}>
+                <Avatar size={120} className="absolute top-0 left-0 z-10 m-4" src={user.avatar || 'https://res.cloudinary.com/dwaldcj4v/image/upload/v1745215451/sodmg5jwxc8m2pho0i8r.jpg'}>
                     <img src="https://i.pravatar.cc/150?u=user" alt="user" className="w-full object-cover max-h-[600px]" />
                 </Avatar>
                 <div className="flex flex-col items-center justify-center p-4 rounded-lg w-full max-w-md mx-auto">
