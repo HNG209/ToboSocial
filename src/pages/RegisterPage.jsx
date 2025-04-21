@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import ToBoSocialImage from "../assets/tobosocial.png";
 
 function RegisterPage() {
   const [formData, setFormData] = useState({
@@ -101,66 +102,73 @@ function RegisterPage() {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-blue-200">
-      <div className="bg-white p-8 rounded-xl shadow-md w-full max-w-md">
-        <h2 className="text-2xl font-bold text-center text-blue-600 mb-6">
-          Register
-        </h2>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <input
-            type="text"
-            name="username"
-            placeholder="Tên đăng nhập"
-            value={formData.username}
-            onChange={handleChange}
-            className="w-full border rounded px-3 py-2"
-            required
+    <div className="flex items-center justify-center min-h-screen bg-gradient-to-r from-cyan-400 to-blue-600 ">
+      <div className="flex w-full max-w-5xl mx-auto bg-white rounded-3xl shadow-lg overflow-hidden">
+        <div className="hidden md:block w-1/2">
+          <img
+            src={ToBoSocialImage}
+            alt="ToboSocial"
+            className="object-cover w-full h-full"
           />
-          <input
-            type="text"
-            name="name"
-            placeholder="Họ tên"
-            value={formData.name}
-            onChange={handleChange}
-            className="w-full border rounded px-3 py-2"
-            required
-          />
-          <input
-            type="email"
-            name="email"
-            placeholder="Email"
-            value={formData.email}
-            onChange={handleChange}
-            className="w-full border rounded px-3 py-2"
-            required
-          />
-          <input
-            type="password"
-            name="password"
-            placeholder="Mật khẩu"
-            value={formData.password}
-            onChange={handleChange}
-            className="w-full border rounded px-3 py-2"
-            required
-          />
-          <input
-            type="password"
-            name="confirmPassword"
-            placeholder="Xác nhận mật khẩu"
-            value={formData.confirmPassword}
-            onChange={handleChange}
-            className="w-full border rounded px-3 py-2"
-            required
-          />
-          <button
-            type="submit"
-            className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition"
-          >
-            Submit
-          </button>
-        </form>
-
-        {/* Dòng dẫn về trang đăng nhập */}
+        </div>
+        <div className="w-full md:w-1/2 p-8 justify-center items-center">
+          <h1 className="text-2xl font-bold text-center text-blue-600 mb-6">
+            Register
+          </h1>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <input
+              type="text"
+              name="username"
+              placeholder="Tên đăng nhập"
+              value={formData.username}
+              onChange={handleChange}
+              className="w-full border rounded px-3 py-2"
+              required
+            />
+            <input
+              type="text"
+              name="name"
+              placeholder="Họ tên"
+              value={formData.name}
+              onChange={handleChange}
+              className="w-full border rounded px-3 py-2"
+              required
+            />
+            <input
+              type="email"
+              name="email"
+              placeholder="Email"
+              value={formData.email}
+              onChange={handleChange}
+              className="w-full border rounded px-3 py-2"
+              required
+            />
+            <input
+              type="password"
+              name="password"
+              placeholder="Mật khẩu"
+              value={formData.password}
+              onChange={handleChange}
+              className="w-full border rounded px-3 py-2"
+              required
+            />
+            <input
+              type="password"
+              name="confirmPassword"
+              placeholder="Xác nhận mật khẩu"
+              value={formData.confirmPassword}
+              onChange={handleChange}
+              className="w-full border rounded px-3 py-2"
+              required
+            />
+            <button
+              type="submit"
+              className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition"
+            >
+              Submit
+            </button>
+          </form>
+          {/* Dòng dẫn về trang đăng nhập */}
         <p className="text-center mt-4 text-sm">
           Have a account?{" "}
           <button
@@ -170,6 +178,9 @@ function RegisterPage() {
             Login
           </button>
         </p>
+        </div>
+
+        
       </div>
 
       {showModal && (
