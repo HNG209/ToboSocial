@@ -1,5 +1,6 @@
+// src/components/home/postCard.js
 import { Card, Avatar, Modal, Button } from 'antd';
-import { BarsOutlined, HeartOutlined, MessageOutlined, SendOutlined, UserOutlined, LeftOutlined, RightOutlined, SoundOutlined, AudioMutedOutlined } from '@ant-design/icons';
+import { BarsOutlined, HeartOutlined, MessageOutlined, SendOutlined, UserOutlined, LeftOutlined, RightOutlined, SoundOutlined, AudioMutedOutlined, HeartFilled } from '@ant-design/icons';
 import { FiBookmark } from 'react-icons/fi';
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import Slider from 'react-slick';
@@ -20,7 +21,7 @@ const timeAgo = (date) => {
     return `${Math.floor(diffInSeconds / 604800)}w`;
 };
 
-function PostCard({ post }) {
+function PostCard({ post, userId, onLikeToggle }) {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [currentSlide, setCurrentSlide] = useState(0);
     const [isMuted, setIsMuted] = useState(true);
@@ -53,16 +54,14 @@ function PostCard({ post }) {
 
     const handleVideoPause = (current) => {
         const video = videoRefs.current[current];
-        if (video) {
-            video.pause();
-        }
+        if (video) video.pause();
     };
 
     const handleVideoPlay = (current) => {
         const video = videoRefs.current[current];
         if (video && post.mediaFiles[current].type === 'video') {
             video.play();
-            setIsMuted(false); // Bật âm thanh khi video phát
+            setIsMuted(false);
             video.muted = false;
         }
     };
@@ -79,7 +78,10 @@ function PostCard({ post }) {
     const handlePrev = () => sliderRef.current.slickPrev();
     const handleNext = () => sliderRef.current.slickNext();
 
-    // Dùng Intersection Observer để dừng video và âm thanh khi lướt qua bài viết
+    const handleLikeClick = () => {
+        onLikeToggle(post._id, isLiked); // Gọi callback từ Home
+    };
+
     const handleVisibilityChange = useCallback((entries) => {
         const [entry] = entries;
         if (!entry.isIntersecting) {
@@ -106,21 +108,18 @@ function PostCard({ post }) {
             threshold: 0.5,
         });
 
-        if (cardRef.current) {
-            observer.observe(cardRef.current);
-        }
-
+        if (cardRef.current) observer.observe(cardRef.current);
         return () => {
-            if (cardRef.current) {
-                observer.unobserve(cardRef.current);
-            }
+            if (cardRef.current) observer.unobserve(cardRef.current);
         };
     }, [handleVisibilityChange]);
 
-    // Reset videoRefs khi post thay đổi
     useEffect(() => {
         videoRefs.current = [];
     }, [post]);
+
+    const isLiked = post.likes.some(like => like._id === userId);
+
 
     return (
         <div className="border-b border-gray-200 pb-4 bg-white" ref={cardRef}>
@@ -187,7 +186,6 @@ function PostCard({ post }) {
                     ))}
                 </Slider>
 
-                {/* Nút Next/Prev */}
                 {post.mediaFiles.length > 1 && (
                     <>
                         {currentSlide !== 0 && (
@@ -213,7 +211,17 @@ function PostCard({ post }) {
             {/* Action Icons */}
             <div className="flex justify-between px-3 pt-2 text-2xl">
                 <div className="flex gap-3">
-                    <HeartOutlined className="text-black hover:text-gray-400" />
+                    {isLiked ? (
+                        <HeartFilled
+                            className="cursor-pointer text-red-500 hover:text-gray-400"
+                            onClick={handleLikeClick}
+                        />
+                    ) : (
+                        <HeartOutlined
+                            className="cursor-pointer text-black hover:text-gray-400"
+                            onClick={handleLikeClick}
+                        />
+                    )}
                     <MessageOutlined className="text-black hover:text-gray-400" />
                     <SendOutlined className="text-black hover:text-gray-400" />
                 </div>

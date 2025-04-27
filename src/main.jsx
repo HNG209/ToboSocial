@@ -17,6 +17,8 @@ import RegisterPage from "./pages/RegisterPage";
 import ProfileEditPage from "./pages/ProfileEditPage";
 import ChangePassword from "./pages/ChangePassword";
 import ForgetPasswordPage from "./pages/ForgetPasswordPage";
+import { Provider } from "react-redux";
+import { store } from "./redux/store";
 
 
 
@@ -86,7 +88,9 @@ const router = createBrowserRouter([
 ]);
 
 ReactDOM.createRoot(document.getElementById("root")).render(
-  // <AuthWrapper>
-  <RouterProvider router={router} />
-  // </AuthWrapper>
+  <Provider store={store}>
+    {/* // <AuthWrapper> */}
+    <RouterProvider router={router} />
+    {/* // </AuthWrapper> */}
+  </Provider>
 );
