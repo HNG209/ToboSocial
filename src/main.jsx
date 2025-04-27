@@ -3,6 +3,8 @@ import ReactDOM from "react-dom/client";
 import { RouterProvider, createBrowserRouter } from "react-router-dom";
 import './styles/global.css'
 import './index.css'
+import "slick-carousel/slick/slick.css";
+import "slick-carousel/slick/slick-theme.css";
 import App from "./App";
 import ErrorPage from "./pages/error";
 import Home from "./pages/Home";
@@ -79,7 +81,7 @@ const router = createBrowserRouter([
   },
   {
     path: "/forgetpassword",
-    element: (<ForgetPasswordPage/>)
+    element: (<ForgetPasswordPage />)
   }
 ]);
 

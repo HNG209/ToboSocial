@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import PostCard from '../components/home/postCard';
-import { getAllPosts } from '../services/api.service';
+import { fetchPostsAPI } from '../services/api.service';
 import Stories from '../components/home/stories';
 
 function Home() {
@@ -9,8 +9,9 @@ function Home() {
     useEffect(() => {
         const fetchPosts = async () => {
             try {
-                const data = await getAllPosts();
-                setPosts(data);
+                const dataPost = await fetchPostsAPI();
+                console.log(dataPost)
+                setPosts(dataPost);
             } catch (error) {
                 console.error("Error fetching posts:", error);
             }
