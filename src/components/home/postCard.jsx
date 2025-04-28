@@ -1,16 +1,17 @@
-// src/components/home/postCard.js
-import { Card, Avatar, Modal, Button } from 'antd';
-import { BarsOutlined, HeartOutlined, MessageOutlined, SendOutlined, UserOutlined, LeftOutlined, RightOutlined, SoundOutlined, AudioMutedOutlined, HeartFilled } from '@ant-design/icons';
+import { Card, Avatar, Modal, Button, Input } from 'antd';
+import { BarsOutlined, HeartOutlined, HeartFilled, MessageOutlined, SendOutlined, UserOutlined, LeftOutlined, RightOutlined, SoundOutlined, AudioMutedOutlined } from '@ant-design/icons';
 import { FiBookmark } from 'react-icons/fi';
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import Slider from 'react-slick';
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
 import '../../styles/home.css';
+import { useDispatch } from 'react-redux';
+import { fetchComments, likeComment, unlikeComment } from '../../redux/post/postsSlice';
 
-// Hàm tính thời gian đăng bài
-const timeAgo = (date) => {
-    const now = new Date();
+// Hàm tính thời gian
+const timeAgo = (date, referenceTime) => {
+    const now = referenceTime || new Date();
     const postDate = new Date(date);
     const diffInSeconds = Math.floor((now - postDate) / 1000);
 
@@ -21,17 +22,33 @@ const timeAgo = (date) => {
     return `${Math.floor(diffInSeconds / 604800)}w`;
 };
 
-function PostCard({ post, userId, onLikeToggle }) {
+function PostCard({ post, userId, onLikeToggle, onComment }) {
+    const dispatch = useDispatch();
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isCommentModalOpen, setIsCommentModalOpen] = useState(false);
     const [currentSlide, setCurrentSlide] = useState(0);
     const [isMuted, setIsMuted] = useState(true);
+    const [commentText, setCommentText] = useState('');
+    const [postTime, setPostTime] = useState('');
+    const [commentTimes, setCommentTimes] = useState([]);
     const sliderRef = useRef(null);
+    const commentSliderRef = useRef(null);
     const cardRef = useRef(null);
     const videoRefs = useRef([]);
+    const commentVideoRefs = useRef([]);
+    const isLiked = post.likes.some(like => like._id === userId);
+    const loadTime = useRef(new Date());
 
     const showModal = () => setIsModalOpen(true);
     const handleOk = () => setIsModalOpen(false);
     const handleCancel = () => setIsModalOpen(false);
+
+    const showCommentModal = () => {
+        dispatch(fetchComments(post._id));
+        setIsCommentModalOpen(true);
+    };
+    const handleCommentModalOk = () => setIsCommentModalOpen(false);
+    const handleCommentModalCancel = () => setIsCommentModalOpen(false);
 
     const sliderSettings = {
         dots: true,
@@ -46,28 +63,33 @@ function PostCard({ post, userId, onLikeToggle }) {
         ),
         dotsClass: "slick-dots custom-dots",
         beforeChange: (current, next) => {
-            handleVideoPause(current);
+            handleVideoPause(current, videoRefs);
+            handleVideoPause(current, commentVideoRefs);
             setCurrentSlide(next);
         },
-        afterChange: (current) => handleVideoPlay(current),
+        afterChange: (current) => {
+            handleVideoPlay(current, videoRefs);
+            handleVideoPlay(current, commentVideoRefs);
+        },
     };
 
-    const handleVideoPause = (current) => {
-        const video = videoRefs.current[current];
-        if (video) video.pause();
-    };
-
-    const handleVideoPlay = (current) => {
-        const video = videoRefs.current[current];
-        if (video && post.mediaFiles[current].type === 'video') {
-            video.play();
-            setIsMuted(false);
-            video.muted = false;
+    const handleVideoPause = (current, refs = videoRefs) => {
+        const video = refs.current[current];
+        if (video) {
+            video.pause();
         }
     };
 
-    const toggleMute = () => {
-        const video = videoRefs.current[currentSlide];
+    const handleVideoPlay = (current, refs = videoRefs) => {
+        const video = refs.current[current];
+        if (video && post.mediaFiles[current].type === 'video') {
+            video.muted = isMuted;
+            video.play().catch(error => console.log("Video play error:", error));
+        }
+    };
+
+    const toggleMute = (refs = videoRefs) => {
+        const video = refs.current[currentSlide];
         if (video) {
             const newMutedState = !video.muted;
             video.muted = newMutedState;
@@ -75,11 +97,29 @@ function PostCard({ post, userId, onLikeToggle }) {
         }
     };
 
-    const handlePrev = () => sliderRef.current.slickPrev();
-    const handleNext = () => sliderRef.current.slickNext();
+    const handlePrev = (ref = sliderRef) => ref.current.slickPrev();
+    const handleNext = (ref = sliderRef) => ref.current.slickNext();
 
     const handleLikeClick = () => {
-        onLikeToggle(post._id, isLiked); // Gọi callback từ Home
+        onLikeToggle(post._id, isLiked);
+    };
+
+    const handleCommentSubmit = () => {
+        if (commentText.trim()) {
+            onComment(post._id, commentText);
+            setCommentTimes([...commentTimes, '0s']);
+            setCommentText('');
+        }
+    };
+
+    // Xử lý like/unlike comment
+    const handleLikeComment = (commentId) => {
+        const isCommentLiked = post.comments.find(c => c._id === commentId)?.likes?.some(like => like._id === userId);
+        if (isCommentLiked) {
+            dispatch(unlikeComment({ postId: post._id, commentId, userId }));
+        } else {
+            dispatch(likeComment({ postId: post._id, commentId, userId }));
+        }
     };
 
     const handleVisibilityChange = useCallback((entries) => {
@@ -93,14 +133,33 @@ function PostCard({ post, userId, onLikeToggle }) {
                 }
             });
         } else {
-            const currentVideo = videoRefs.current[currentSlide];
-            if (currentVideo && post.mediaFiles[currentSlide].type === 'video') {
-                currentVideo.muted = false;
-                setIsMuted(false);
-                currentVideo.play();
-            }
+            handleVideoPlay(currentSlide, videoRefs);
         }
     }, [currentSlide, post.mediaFiles]);
+
+    // Cập nhật thời gian bài đăng khi component mount
+    useEffect(() => {
+        setPostTime(timeAgo(post.createdAt, loadTime.current));
+    }, [post]);
+
+    // Cập nhật thời gian bình luận và đồng bộ slider + video khi mở modal
+    useEffect(() => {
+        if (isCommentModalOpen) {
+            const now = new Date();
+            const updatedCommentTimes = post.comments.map(comment =>
+                timeAgo(comment.createdAt, now)
+            );
+            setCommentTimes(updatedCommentTimes);
+            if (commentSliderRef.current) {
+                commentSliderRef.current.slickGoTo(currentSlide);
+                setTimeout(() => {
+                    handleVideoPlay(currentSlide, commentVideoRefs);
+                }, 100);
+            }
+        } else {
+            handleVideoPause(currentSlide, commentVideoRefs);
+        }
+    }, [isCommentModalOpen, post.comments, currentSlide]);
 
     useEffect(() => {
         const observer = new IntersectionObserver(handleVisibilityChange, {
@@ -116,10 +175,8 @@ function PostCard({ post, userId, onLikeToggle }) {
 
     useEffect(() => {
         videoRefs.current = [];
+        commentVideoRefs.current = [];
     }, [post]);
-
-    const isLiked = post.likes.some(like => like._id === userId);
-
 
     return (
         <div className="border-b border-gray-200 pb-4 bg-white" ref={cardRef}>
@@ -134,7 +191,7 @@ function PostCard({ post, userId, onLikeToggle }) {
                     />
                     <div className="ml-3 flex flex-col">
                         <span className="font-semibold text-black">{post.author?.username || `user${post.author?._id}`}</span>
-                        <span className="text-xs text-gray-400">{timeAgo(post.createdAt)}</span>
+                        <span className="text-xs text-gray-400">{postTime}</span>
                     </div>
                 </div>
                 <BarsOutlined className="text-lg text-black" onClick={showModal} />
@@ -155,6 +212,201 @@ function PostCard({ post, userId, onLikeToggle }) {
                 <Button size="medium" className="w-full" onClick={handleOk}>Đi đến bài viết</Button>
             </Modal>
 
+            {/* Comment Modal */}
+            <Modal
+                closable={true}
+                centered={true}
+                open={isCommentModalOpen}
+                onOk={handleCommentModalOk}
+                onCancel={handleCommentModalCancel}
+                width="80%"
+                styles={{ padding: 0, height: '80vh' }}
+                okButtonProps={{ style: { display: 'none' } }}
+                cancelButtonProps={{ style: { display: 'none' } }}
+                bodyStyle={{ padding: 0 }}
+            >
+                <div className="flex h-full">
+                    {/* Left Side: Media - Ẩn trên màn hình nhỏ */}
+                    <div className="hidden md:block w-3/5 h-full bg-black relative">
+                        <Slider ref={commentSliderRef} {...sliderSettings}>
+                            {post.mediaFiles.map((media, index) => (
+                                <div key={index} className="w-full h-[80vh] relative">
+                                    {media.type === 'image' ? (
+                                        <img
+                                            src={media.url}
+                                            alt={`post-media-${index}`}
+                                            className="w-full h-full object-contain"
+                                        />
+                                    ) : (
+                                        <>
+                                            <video
+                                                ref={(el) => (commentVideoRefs.current[index] = el)}
+                                                src={media.url}
+                                                className="w-full h-full object-contain"
+                                                loop
+                                                playsInline
+                                            />
+                                            <button
+                                                className="absolute bottom-2 right-2 text-white bg-black bg-opacity-50 rounded-full p-1"
+                                                onClick={() => toggleMute(commentVideoRefs)}
+                                            >
+                                                {isMuted ? <AudioMutedOutlined /> : <SoundOutlined />}
+                                            </button>
+                                        </>
+                                    )}
+                                </div>
+                            ))}
+                        </Slider>
+                        {post.mediaFiles.length > 1 && (
+                            <>
+                                {currentSlide !== 0 && (
+                                    <button
+                                        className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-70 rounded-full p-1 shadow-md z-10"
+                                        onClick={() => handlePrev(commentSliderRef)}
+                                    >
+                                        <LeftOutlined className="text-black text-sm" />
+                                    </button>
+                                )}
+                                {currentSlide !== post.mediaFiles.length - 1 && (
+                                    <button
+                                        className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-70 rounded-full p-1 shadow-md z-10"
+                                        onClick={() => handleNext(commentSliderRef)}
+                                    >
+                                        <RightOutlined className="text-black text-sm" />
+                                    </button>
+                                )}
+                            </>
+                        )}
+                    </div>
+
+                    {/* Right Side: Comments */}
+                    <div className="w-full md:w-2/5 h-full flex flex-col">
+                        {/* Post Header */}
+                        <div className="flex items-center p-4 border-b border-gray-200">
+                            <Avatar
+                                src={post.author?.avatar || `https://i.pravatar.cc/150?u=${post.author?._id}`}
+                                icon={<UserOutlined />}
+                                className="border-2 border-pink-500 p-0.5 rounded-full"
+                                size={32}
+                            />
+                            <div className="ml-3 flex flex-col">
+                                <span className="font-semibold text-black">{post.author?.username || `user${post.author?._id}`}</span>
+                                <span className="text-xs text-gray-400">{postTime}</span>
+                            </div>
+                        </div>
+
+                        {/* Caption and Comments */}
+                        <div className="p-4 overflow-y-auto" style={{ maxHeight: 'calc(80vh - 280px)' }}>
+                            {/* Caption */}
+                            <div className="flex items-center mb-4">
+                                <Avatar
+                                    src={post.author?.avatar || `https://i.pravatar.cc/150?u=${post.author?._id}`}
+                                    icon={<UserOutlined />}
+                                    size={24}
+                                    className="mr-2"
+                                />
+                                <div className="flex flex-col">
+                                    <div>
+                                        <span className="font-semibold mr-2 text-black">{post.author?.username || `user${post.author?._id}`}</span>
+                                        <span>{post.caption}</span>
+                                    </div>
+                                    <span className="text-xs text-gray-400">{postTime}</span>
+                                </div>
+                            </div>
+
+                            {/* Comments List */}
+                            {post.comments.length > 0 && (
+                                <div className="text-sm text-gray-600">
+                                    {post.comments.map((comment, index) => {
+                                        const isCommentLiked = comment.likes?.some(like => like._id === userId);
+                                        return (
+                                            <div key={comment._id} className="flex items-start mb-4">
+                                                <div className="mr-2">
+                                                    <Avatar
+                                                        src={comment.user?.profile?.avatar || `https://i.pravatar.cc/150?u=${comment.user?._id}`}
+                                                        icon={<UserOutlined />}
+                                                        size={24}
+                                                    />
+                                                </div>
+                                                <div className="flex-1">
+                                                    <div className="flex justify-between items-center">
+                                                        <div>
+                                                            <span className="font-semibold mr-2">{comment.user?.username || `user${comment.user?._id}`}</span>
+                                                            <span>{comment.text}</span>
+                                                        </div>
+                                                        <span
+                                                            className="cursor-pointer ml-4"
+                                                            onClick={() => handleLikeComment(comment._id)}
+                                                        >
+                                                            {isCommentLiked ? (
+                                                                <HeartFilled className="text-red-500 text-lg" />
+                                                            ) : (
+                                                                <HeartOutlined className="text-gray-600 text-lg" />
+                                                            )}
+                                                        </span>
+                                                    </div>
+                                                    <div className="flex items-center mt-1 ml-1">
+                                                        <span className="text-xs text-gray-400">{commentTimes[index]}</span>
+                                                        {comment.likes?.length > 0 && (
+                                                            <span className="text-xs text-gray-600 ml-2">{comment.likes.length} likes</span>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Likes and Actions */}
+                        <div className="p-4 border-t border-gray-200">
+                            <div className="flex justify-between text-2xl mb-2">
+                                <div className="flex gap-3">
+                                    {isLiked ? (
+                                        <HeartFilled
+                                            className="cursor-pointer text-red-500 hover:text-gray-400"
+                                            onClick={handleLikeClick}
+                                        />
+                                    ) : (
+                                        <HeartOutlined
+                                            className="cursor-pointer text-black hover:text-gray-400"
+                                            onClick={handleLikeClick}
+                                        />
+                                    )}
+                                    <MessageOutlined className="text-black hover:text-gray-400" />
+                                    <SendOutlined className="text-black hover:text-gray-400" />
+                                </div>
+                                <FiBookmark className="text-black hover:text-gray-400" />
+                            </div>
+                            <div className="text-sm font-semibold text-black">
+                                {post.likes.length} likes
+                            </div>
+                        </div>
+
+                        {/* Comment Input */}
+                        <div className="p-4 border-t border-gray-200">
+                            <div className="flex items-center">
+                                <Input
+                                    placeholder="Add a comment..."
+                                    value={commentText}
+                                    onChange={(e) => setCommentText(e.target.value)}
+                                    onPressEnter={handleCommentSubmit}
+                                    className="flex-1 mr-2"
+                                />
+                                <Button
+                                    type="primary"
+                                    onClick={handleCommentSubmit}
+                                    disabled={!commentText.trim()}
+                                >
+                                    Post
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </Modal>
+
             {/* Post Media Carousel */}
             <div className="relative">
                 <Slider ref={sliderRef} {...sliderSettings}>
@@ -173,10 +425,11 @@ function PostCard({ post, userId, onLikeToggle }) {
                                         src={media.url}
                                         className="w-full h-full object-cover"
                                         loop
+                                        playsInline
                                     />
                                     <button
                                         className="absolute bottom-2 right-2 text-white bg-black bg-opacity-50 rounded-full p-1"
-                                        onClick={toggleMute}
+                                        onClick={() => toggleMute(videoRefs)}
                                     >
                                         {isMuted ? <AudioMutedOutlined /> : <SoundOutlined />}
                                     </button>
@@ -185,13 +438,12 @@ function PostCard({ post, userId, onLikeToggle }) {
                         </div>
                     ))}
                 </Slider>
-
                 {post.mediaFiles.length > 1 && (
                     <>
                         {currentSlide !== 0 && (
                             <button
                                 className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-70 rounded-full p-1 shadow-md"
-                                onClick={handlePrev}
+                                onClick={() => handlePrev(sliderRef)}
                             >
                                 <LeftOutlined className="text-black text-sm" />
                             </button>
@@ -199,7 +451,7 @@ function PostCard({ post, userId, onLikeToggle }) {
                         {currentSlide !== post.mediaFiles.length - 1 && (
                             <button
                                 className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-70 rounded-full p-1 shadow-md"
-                                onClick={handleNext}
+                                onClick={() => handleNext(sliderRef)}
                             >
                                 <RightOutlined className="text-black text-sm" />
                             </button>
@@ -222,7 +474,10 @@ function PostCard({ post, userId, onLikeToggle }) {
                             onClick={handleLikeClick}
                         />
                     )}
-                    <MessageOutlined className="text-black hover:text-gray-400" />
+                    <MessageOutlined
+                        className="text-black hover:text-gray-400 cursor-pointer"
+                        onClick={showCommentModal}
+                    />
                     <SendOutlined className="text-black hover:text-gray-400" />
                 </div>
                 <FiBookmark className="text-black hover:text-gray-400" />
@@ -239,10 +494,12 @@ function PostCard({ post, userId, onLikeToggle }) {
                 <span className="text-black">{post.caption}</span>
             </div>
 
-            {/* Comments Count */}
+            {/* Optional: Show a preview of comments */}
             {post.comments.length > 0 && (
-                <div className="px-3 text-sm text-gray-400">
-                    View all {post.comments.length} comments
+                <div className="px-3 text-sm text-gray-600">
+                    <div className="cursor-pointer" onClick={showCommentModal}>
+                        View all {post.comments.length} comments
+                    </div>
                 </div>
             )}
         </div>

@@ -1,9 +1,8 @@
-// src/pages/Home.js
 import { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import PostCard from '../components/home/postCard';
 import Stories from '../components/home/stories';
-import { fetchPosts, likePost, unlikePost } from '../redux/post/postsSlice';
+import { fetchPosts, likePost, unlikePost, createComment } from '../redux/post/postsSlice';
 
 function Home() {
     const dispatch = useDispatch();
@@ -25,13 +24,14 @@ function Home() {
         }
     };
 
+    const handleComment = (postId, text) => {
+        dispatch(createComment({ postId, userId, text }));
+    };
+
     return (
         <div className="flex justify-center bg-white">
             <div className="w-full max-w-[630px] border-x border-gray-200 min-h-screen">
-                {/* Story Section */}
                 <Stories />
-
-                {/* Post Feed */}
                 {status === 'loading' && <p>Loading posts...</p>}
                 {status === 'succeeded' &&
                     posts.map(post => (
@@ -40,12 +40,11 @@ function Home() {
                             post={post}
                             userId={userId}
                             onLikeToggle={handleLikeToggle}
+                            onComment={handleComment}
                         />
                     ))}
                 {status === 'failed' && <p>Error loading posts</p>}
             </div>
-
-            {/* Right Sidebar - Gợi ý follow */}
             <div className="hidden lg:block w-[320px] px-6 py-8">
                 <div className="flex items-center justify-between mb-6">
                     <div className="flex items-center">
