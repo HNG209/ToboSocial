@@ -19,6 +19,7 @@ import ChangePassword from "./pages/ChangePassword";
 import ForgetPasswordPage from "./pages/ForgetPasswordPage";
 import { Provider } from "react-redux";
 import { store } from "./redux/store";
+import PostDetailPage from "./pages/client/PostDetailPage";
 
 
 
@@ -70,6 +71,10 @@ const router = createBrowserRouter([
           <ChangePassword />
           // </PrivateRoute>
         ),
+      },
+      {
+        path: "/posts/:postId",
+        element: <PostDetailPage />,
       },
     ],
   },
