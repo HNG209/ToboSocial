@@ -1,21 +1,21 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import { useDispatch, useSelector } from "react-redux";
+import { forgotPassword } from "../redux/auth/authSlice";
 
 const ForgetPasswordPage = () => {
-  const [step, setStep] = useState(1); // 1: Nhập email, 2: Nhập mã, 3: Đổi mật khẩu
   const [email, setEmail] = useState("");
-  const [verificationCode, setVerificationCode] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [generatedCode, setGeneratedCode] = useState(""); // Mã xác nhận giả lập
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [emailSent, setEmailSent] = useState(false); // Track if email was sent successfully
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const authStatus = useSelector((state) => state.auth.status);
+  const authError = useSelector((state) => state.auth.error);
 
-  // B1: Gửi mã xác nhận
-  const handleSendCode = async (e) => {
+  // Handle sending forgot password request
+  const handleSendEmail = async (e) => {
     e.preventDefault();
     setError("");
     setMessage("");
@@ -28,89 +28,28 @@ const ForgetPasswordPage = () => {
     }
 
     try {
-      // Gọi mock API để kiểm tra email có tồn tại không
-      const res = await axios.get("https://67da34cd35c87309f52b67a2.mockapi.io/user");
-      const users = res.data;
-      const userExists = users.find((u) => u.email.toLowerCase() === email.trim().toLowerCase());
+      // Call forgotPassword API via Redux thunk
+      await dispatch(forgotPassword(email)).unwrap();
 
-      if (!userExists) {
-        setError("Email không tồn tại trong hệ thống.");
-      } else {
-        const fakeCode = Math.floor(100000 + Math.random() * 900000).toString(); // Mã giả lập 6 chữ số
-        setGeneratedCode(fakeCode);
-        setMessage(`Mã xác nhận đã được gửi đến email của bạn. (${fakeCode})`);
-        setStep(2);
-      }
+      // On success, show success message and enable "Back to Login" button
+      setMessage("Mật khẩu mới đã được gửi thành công đến email của bạn.");
+      setEmailSent(true);
     } catch (err) {
-      console.error(err);
-      
-      setError("Đã xảy ra lỗi khi kiểm tra email.");
+      // Handle error (e.g., email not found)
+      setError(
+        err.message.includes("not found") || err.message.includes("Email không tồn tại")
+          ? "Email không tồn tại trong hệ thống."
+          : "Đã xảy ra lỗi khi gửi yêu cầu. Vui lòng thử lại."
+      );
     } finally {
       setIsLoading(false);
     }
   };
 
-  // B2: Xác minh mã
-  const handleVerifyCode = (e) => {
-    e.preventDefault();
-    setError("");
-    setMessage("");
-
-    if (!verificationCode) {
-      setError("Vui lòng nhập mã xác nhận.");
-      return;
-    }
-
-    if (verificationCode === generatedCode) {
-      setMessage("Xác minh thành công. Vui lòng nhập mật khẩu mới.");
-      setStep(3);
-    } else {
-      setError("Mã xác nhận không chính xác.");
-    }
+  // Navigate back to login page
+  const handleBackToLogin = () => {
+    navigate("/login");
   };
-
-  // B3: Đổi mật khẩu (giả lập)
-  const handleSubmitNewPassword = async (e) => {
-    e.preventDefault();
-  
-    if (newPassword !== confirmPassword) {
-      setError("Mật khẩu không khớp.");
-      return;
-    }
-  
-    setIsLoading(true);
-    setError("");
-    setMessage("");
-  
-    try {
-      // 1. Tìm user theo email
-      const userRes = await axios.get(`https://67da34cd35c87309f52b67a2.mockapi.io/user?email=${email}`);
-      const user = userRes.data[0];
-  
-      if (!user) {
-        setError("Không tìm thấy người dùng với email này.");
-        setIsLoading(false);
-        return;
-      }
-  
-      // 2. Gửi PUT để cập nhật mật khẩu
-      await axios.put(`https://67da34cd35c87309f52b67a2.mockapi.io/user/${user.id}`, {
-        ...user,
-        password: newPassword,
-      });
-  
-      setMessage("Mật khẩu đã được thay đổi thành công.");
-      setTimeout(() => {
-        navigate("/login");
-      }, 2000);
-    } catch (err) {
-      console.error(err);
-      setError("Có lỗi xảy ra khi thay đổi mật khẩu.");
-    }
-  
-    setIsLoading(false);
-  };
-  
 
   return (
     <div className="max-w-lg mx-auto p-6 bg-white rounded-lg shadow-md">
@@ -119,75 +58,31 @@ const ForgetPasswordPage = () => {
       {error && <div className="text-red-500 text-center mb-4">{error}</div>}
       {message && <div className="text-green-500 text-center mb-4">{message}</div>}
 
-      {/* Bước 1: Nhập email */}
-      {step === 1 && (
-        <form onSubmit={handleSendCode}>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="Nhập email của bạn"
-            className="w-full p-3 mb-4 border border-gray-300 rounded-md"
-            required
-          />
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="w-full p-3 bg-blue-500 text-white rounded-md hover:bg-blue-600"
-          >
-            {isLoading ? "Đang kiểm tra..." : "Gửi mã xác nhận"}
-          </button>
-        </form>
-      )}
+      <form onSubmit={handleSendEmail}>
+        <input
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="Nhập email của bạn"
+          className="w-full p-3 mb-4 border border-gray-300 rounded-md"
+          required
+        />
+        <button
+          type="submit"
+          disabled={isLoading || authStatus === "loading"}
+          className="w-full p-3 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+        >
+          {isLoading || authStatus === "loading" ? "Đang gửi..." : "Gửi yêu cầu"}
+        </button>
+      </form>
 
-      {/* Bước 2: Nhập mã xác nhận */}
-      {step === 2 && (
-        <form onSubmit={handleVerifyCode}>
-          <input
-            type="text"
-            value={verificationCode}
-            onChange={(e) => setVerificationCode(e.target.value)}
-            placeholder="Nhập mã xác nhận"
-            className="w-full p-3 mb-4 border border-gray-300 rounded-md"
-            required
-          />
-          <button
-            type="submit"
-            className="w-full p-3 bg-blue-500 text-white rounded-md hover:bg-blue-600"
-          >
-            Xác nhận mã
-          </button>
-        </form>
-      )}
-
-      {/* Bước 3: Nhập mật khẩu mới */}
-      {step === 3 && (
-        <form onSubmit={handleSubmitNewPassword}>
-          <input
-            type="password"
-            name="newPassword"
-            value={newPassword}
-            onChange={(e) => setNewPassword(e.target.value)}
-            placeholder="Mật khẩu mới"
-            className="w-full p-3 mb-4 border border-gray-300 rounded-md"
-            required
-          />
-          <input
-            type="password"
-            name="confirmPassword"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            placeholder="Xác nhận mật khẩu"
-            className="w-full p-3 mb-4 border border-gray-300 rounded-md"
-            required
-          />
-          <button
-            type="submit"
-            className="w-full p-3 bg-blue-500 text-white rounded-md hover:bg-blue-600"
-          >
-            Đổi mật khẩu
-          </button>
-        </form>
+      {emailSent && (
+        <button
+          onClick={handleBackToLogin}
+          className="w-full p-3 mt-4 bg-gray-500 text-white rounded-md hover:bg-gray-600"
+        >
+          Quay về trang đăng nhập
+        </button>
       )}
     </div>
   );

@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
 import ToBoSocialImage from "../assets/tobosocial.png";
+import { register } from "../redux/auth/authSlice";
 
 function RegisterPage() {
   const [formData, setFormData] = useState({
@@ -10,10 +12,12 @@ function RegisterPage() {
     password: "",
     confirmPassword: "",
   });
-
   const [modalMessage, setModalMessage] = useState("");
   const [showModal, setShowModal] = useState(false);
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const authStatus = useSelector((state) => state.auth.status);
+  const authError = useSelector((state) => state.auth.error);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -39,64 +43,31 @@ function RegisterPage() {
     }
 
     try {
-      const checkResponse = await fetch(
-        `https://67da34cd35c87309f52b67a2.mockapi.io/user?username=${username}`
-      );
+      // Call register API via Redux thunk
+      await dispatch(
+        register({
+          username,
+          email,
+          password,
+          fullName: name,
+        })
+      ).unwrap();
 
-      const existing = await checkResponse.text(); // dùng .text() để đọc raw
-
-      // TH1: Nếu là "Not found" thì không trùng username
-      if (existing === "Not found") {
-        console.log("✅ Username chưa tồn tại.");
-      } else {
-        // TH2: Nếu không phải "Not found", thì parse JSON để kiểm tra
-        const existingUsers = JSON.parse(existing);
-
-        if (Array.isArray(existingUsers) && existingUsers.length > 0) {
-          setModalMessage("Tên đăng nhập đã tồn tại. Vui lòng chọn tên khác!");
-          setShowModal(true);
-          return;
-        }
-      }
-
-      // Nếu mọi thứ ok thì tiếp tục tạo user
-      const userToPost = {
-        username,
-        name,
-        email,
-        password,
-        createdAt: new Date().toLocaleString("vi-VN"),
-        followers: null,
-        following: null,
-        posts: null,
-        bio: null,
-        avatar: null,
-        friendsList: null,
-      };
-
-      const response = await fetch(
-        "https://67da34cd35c87309f52b67a2.mockapi.io/user",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(userToPost),
-        }
-      );
-
-      if (!response.ok) throw new Error("Đăng ký thất bại!");
-
+      // On success, show success message and redirect to login
       setModalMessage("Đăng ký thành công!");
       setShowModal(true);
-
       setTimeout(() => {
         setShowModal(false);
         navigate("/login");
       }, 1500);
     } catch (err) {
       console.error(err);
-      setModalMessage("Có lỗi xảy ra khi đăng ký!");
+      // Handle specific errors (e.g., username/email already exists)
+      setModalMessage(
+        err.message.includes("username") || err.message.includes("email")
+          ? "Tên đăng nhập hoặc email đã tồn tại. Vui lòng chọn giá trị khác!"
+          : "Có lỗi xảy ra khi đăng ký!"
+      );
       setShowModal(true);
     }
   };
@@ -163,24 +134,23 @@ function RegisterPage() {
             />
             <button
               type="submit"
+              disabled={authStatus === "loading"}
               className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition"
             >
-              Submit
+              {authStatus === "loading" ? "Đang đăng ký..." : "Submit"}
             </button>
           </form>
           {/* Dòng dẫn về trang đăng nhập */}
-        <p className="text-center mt-4 text-sm">
-          Have a account?{" "}
-          <button
-            onClick={() => navigate("/login")}
-            className="text-blue-600 hover:underline"
-          >
-            Login
-          </button>
-        </p>
+          <p className="text-center mt-4 text-sm">
+            Have a account?{" "}
+            <button
+              onClick={() => navigate("/login")}
+              className="text-blue-600 hover:underline"
+            >
+              Login
+            </button>
+          </p>
         </div>
-
-        
       </div>
 
       {showModal && (
