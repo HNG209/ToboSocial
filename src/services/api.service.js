@@ -47,6 +47,12 @@ const deleteCommentAPI = (commentId) => {
     return axios.delete(URL_BACKEND, { data: { id: commentId } });
 }
 
+const fetchPostDetailAPI = (postId) => {
+    const URL_BACKEND = `/v1/api/posts/${postId}`;
+    return axios.get(URL_BACKEND);
+}
+
+
 export {
     fetchPostsAPI,
     likePostAPI,
@@ -57,4 +63,5 @@ export {
     updateCommentAPI,
     likeCommentAPI,
     unlikeCommentAPI,
+    fetchPostDetailAPI
 };

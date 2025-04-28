@@ -9,6 +9,7 @@ import {
     updateCommentAPI,
     likeCommentAPI,
     unlikeCommentAPI,
+    fetchPostDetailAPI,
 } from '../../services/api.service';
 
 // Like comment
@@ -107,10 +108,21 @@ export const deleteComment = createAsyncThunk('posts/deleteComment', async ({ po
     }
 });
 
+export const fetchPostDetail = createAsyncThunk('posts/fetchPostDetail', async (postId, { rejectWithValue }) => {
+    try {
+        const response = await fetchPostDetailAPI(postId);
+        return response;
+    } catch (error) {
+        console.error('Error in fetchPostDetail:', error.message);
+        return rejectWithValue(error.message);
+    }
+});
+
 const postsSlice = createSlice({
     name: 'posts',
     initialState: {
         posts: [],
+        postDetail: null,
         status: 'idle',
         error: null,
     },
@@ -255,7 +267,19 @@ const postsSlice = createSlice({
             .addCase(unlikeComment.rejected, (state, action) => {
                 console.error('Unlike comment rejected:', action.payload);
                 state.error = action.payload;
-            });
+            })
+            .addCase(fetchPostDetail.pending, (state) => {
+                state.status = 'loading';
+                state.postDetail = null;
+            })
+            .addCase(fetchPostDetail.fulfilled, (state, action) => {
+                state.status = 'succeeded';
+                state.postDetail = action.payload; // Gán bài viết chi tiết
+            })
+            .addCase(fetchPostDetail.rejected, (state, action) => {
+                state.status = 'failed';
+                state.error = action.payload;
+            })
     },
 });
 

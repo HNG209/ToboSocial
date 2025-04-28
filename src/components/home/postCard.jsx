@@ -1,5 +1,5 @@
-import { Card, Avatar, Modal, Button, Input, Menu, Dropdown } from 'antd';
-import { BarsOutlined, HeartOutlined, HeartFilled, MessageOutlined, SendOutlined, UserOutlined, LeftOutlined, RightOutlined, SoundOutlined, AudioMutedOutlined, MoreOutlined } from '@ant-design/icons';
+import { Card, Avatar, Modal, Button, Input, Menu, Dropdown, notification } from 'antd';
+import { BarsOutlined, HeartOutlined, HeartFilled, MessageOutlined, SendOutlined, UserOutlined, LeftOutlined, RightOutlined, SoundOutlined, AudioMutedOutlined } from '@ant-design/icons';
 import { FiBookmark } from 'react-icons/fi';
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import Slider from 'react-slick';
@@ -23,6 +23,24 @@ const timeAgo = (date, referenceTime) => {
     return `${Math.floor(diffInSeconds / 604800)}w`;
 };
 
+const copyToClipboard = (text) => {
+    navigator.clipboard.writeText(text).then(() => {
+        notification.success({
+            message: 'Đã sao chép liên kết!',
+            placement: 'topCenter',
+            duration: 2, // Hiển thị thông báo 2 giây rồi tự tắt
+        });
+    }).catch((error) => {
+        console.error('Failed to copy:', error);
+        notification.error({
+            message: 'Sao chép thất bại!',
+            description: 'Không thể sao chép liên kết. Vui lòng thử lại.',
+            placement: 'topCenter',
+        });
+    });
+};
+
+
 function PostCard({ post: initialPost, userId, onLikeToggle, onComment }) {
     const dispatch = useDispatch();
     const posts = useSelector((state) => state.posts.posts); // Lấy posts từ Redux store
@@ -30,6 +48,7 @@ function PostCard({ post: initialPost, userId, onLikeToggle, onComment }) {
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isCommentModalOpen, setIsCommentModalOpen] = useState(false);
+    const [isShareModalVisible, setIsShareModalVisible] = useState(false);
     const [currentSlide, setCurrentSlide] = useState(0);
     const [isMuted, setIsMuted] = useState(true);
     const [commentText, setCommentText] = useState('');
@@ -53,6 +72,28 @@ function PostCard({ post: initialPost, userId, onLikeToggle, onComment }) {
     };
     const handleCommentModalOk = () => setIsCommentModalOpen(false);
     const handleCommentModalCancel = () => setIsCommentModalOpen(false);
+
+    const showShareModal = () => {
+        setIsShareModalVisible(true);
+    };
+
+    const handleShareModalCancel = () => {
+        setIsShareModalVisible(false);
+    };
+
+    // Xử lý sao chép liên kết
+    const handleCopyLink = () => {
+        const shareLink = `${window.location.origin}/posts/${post._id}`;
+        copyToClipboard(shareLink);
+        // Không đóng modal để người dùng có thể tiếp tục chọn các hành động khác
+    };
+
+    // Xử lý đi đến bài viết
+    const handleGoToPost = () => {
+        const shareLink = `${window.location.origin}/posts/${post._id}`;
+        window.open(shareLink, '_blank'); // Mở liên kết trong tab mới
+        setIsModalOpen(false); // Đóng modal sau khi mở tab
+    };
 
     const sliderSettings = {
         dots: true,
@@ -152,7 +193,6 @@ function PostCard({ post: initialPost, userId, onLikeToggle, onComment }) {
         ],
     });
 
-
     const handleVisibilityChange = useCallback((entries) => {
         const [entry] = entries;
         if (!entry.isIntersecting) {
@@ -209,6 +249,8 @@ function PostCard({ post: initialPost, userId, onLikeToggle, onComment }) {
         commentVideoRefs.current = [];
     }, [post]);
 
+    const shareLink = `${window.location.origin}/posts/${post._id}`;
+
     return (
         <div className="border-b border-gray-200 pb-4 bg-white" ref={cardRef}>
             {/* Header */}
@@ -239,8 +281,52 @@ function PostCard({ post: initialPost, userId, onLikeToggle, onComment }) {
                 cancelButtonProps={{ style: { display: 'none' } }}
             >
                 <Button danger size="medium" className="w-full mb-2" onClick={handleOk}>Báo cáo</Button>
-                <Button size="medium" className="w-full mb-2" onClick={handleOk}>Sao chép liên kết</Button>
-                <Button size="medium" className="w-full" onClick={handleOk}>Đi đến bài viết</Button>
+                <Button size="medium" className="w-full mb-2" onClick={handleCopyLink}>Sao chép liên kết</Button>
+                <Button size="medium" className="w-full" onClick={handleGoToPost}>Đi đến bài viết</Button>
+            </Modal>
+
+            {/* Share Modal */}
+            <Modal
+                title="Share Post"
+                open={isShareModalVisible}
+                onCancel={handleShareModalCancel}
+                footer={null}
+                centered
+                width={400}
+            >
+                <div className="flex flex-col gap-4">
+                    {/* Copy Link Section */}
+                    <div className="flex items-center bg-gray-100 p-2 rounded">
+                        <Input
+                            value={shareLink}
+                            readOnly
+                            className="flex-1 mr-2 border-none bg-transparent"
+                        />
+                        <Button
+                            type="primary"
+                            onClick={() => copyToClipboard(shareLink)}
+                        >
+                            Copy
+                        </Button>
+                    </div>
+                    {/* Placeholder for Other Sharing Options (Instagram-like) */}
+                    <div className="flex flex-col gap-2">
+                        <Button
+                            icon={<MessageOutlined />}
+                            disabled
+                            className="text-left"
+                        >
+                            Send in Direct Message
+                        </Button>
+                        <Button
+                            icon={<SendOutlined />}
+                            disabled
+                            className="text-left"
+                        >
+                            Share to Other Apps
+                        </Button>
+                    </div>
+                </div>
             </Modal>
 
             {/* Comment Modal */}
@@ -366,7 +452,7 @@ function PostCard({ post: initialPost, userId, onLikeToggle, onComment }) {
                                             <Avatar
                                                 src={comment.user?.profile?.avatar || `https://i.pravatar.cc/150?u=${comment.user?._id}`}
                                                 icon={<UserOutlined />}
-                                                size={32} // ⬅️ Tăng từ 24 → 32
+                                                size={32}
                                             />
                                         </div>
                                         <div className="flex-1 text-[15px] leading-snug">
@@ -389,7 +475,6 @@ function PostCard({ post: initialPost, userId, onLikeToggle, onComment }) {
                                             <div className="flex items-center mt-1 ml-1 relative text-[13px] text-gray-500">
                                                 <span>{commentTimes[index]}</span>
                                                 <span className="ml-2 min-w-[40px]">{likeText || ''}</span>
-
                                                 {isCommentOwner && (
                                                     <Dropdown menu={commentMenu(comment._id)} trigger={['click']}>
                                                         <span className="ml-2 cursor-pointer font-bold opacity-0 group-hover:opacity-100 transition-opacity">
@@ -402,8 +487,6 @@ function PostCard({ post: initialPost, userId, onLikeToggle, onComment }) {
                                     </div>
                                 );
                             })}
-
-
                         </div>
 
                         {/* Likes and Actions */}
@@ -421,8 +504,14 @@ function PostCard({ post: initialPost, userId, onLikeToggle, onComment }) {
                                             onClick={handleLikeClick}
                                         />
                                     )}
-                                    <MessageOutlined className="text-black hover:text-gray-400" />
-                                    <SendOutlined className="text-black hover:text-gray-400" />
+                                    <MessageOutlined
+                                        className="text-black hover:text-gray-400 cursor-pointer"
+                                        onClick={showCommentModal}
+                                    />
+                                    <SendOutlined
+                                        className="text-black hover:text-gray-400 cursor-pointer"
+                                        onClick={showShareModal}
+                                    />
                                 </div>
                                 <FiBookmark className="text-black hover:text-gray-400" />
                             </div>
@@ -525,7 +614,10 @@ function PostCard({ post: initialPost, userId, onLikeToggle, onComment }) {
                         className="text-black hover:text-gray-400 cursor-pointer"
                         onClick={showCommentModal}
                     />
-                    <SendOutlined className="text-black hover:text-gray-400" />
+                    <SendOutlined
+                        className="text-black hover:text-gray-400 cursor-pointer"
+                        onClick={showShareModal}
+                    />
                 </div>
                 <FiBookmark className="text-black hover:text-gray-400" />
             </div>
