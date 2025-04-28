@@ -1,13 +1,14 @@
-import { Card, Avatar, Modal, Button, Input } from 'antd';
-import { BarsOutlined, HeartOutlined, HeartFilled, MessageOutlined, SendOutlined, UserOutlined, LeftOutlined, RightOutlined, SoundOutlined, AudioMutedOutlined } from '@ant-design/icons';
+import { Card, Avatar, Modal, Button, Input, Menu, Dropdown } from 'antd';
+import { BarsOutlined, HeartOutlined, HeartFilled, MessageOutlined, SendOutlined, UserOutlined, LeftOutlined, RightOutlined, SoundOutlined, AudioMutedOutlined, MoreOutlined } from '@ant-design/icons';
 import { FiBookmark } from 'react-icons/fi';
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import Slider from 'react-slick';
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
 import '../../styles/home.css';
-import { useDispatch } from 'react-redux';
-import { fetchComments, likeComment, unlikeComment } from '../../redux/post/postsSlice';
+import { useDispatch, useSelector } from 'react-redux';
+import { deleteComment, fetchComments, likeComment, unlikeComment } from '../../redux/post/postsSlice';
+import { IoIosMore } from 'react-icons/io';
 
 // Hàm tính thời gian
 const timeAgo = (date, referenceTime) => {
@@ -22,8 +23,11 @@ const timeAgo = (date, referenceTime) => {
     return `${Math.floor(diffInSeconds / 604800)}w`;
 };
 
-function PostCard({ post, userId, onLikeToggle, onComment }) {
+function PostCard({ post: initialPost, userId, onLikeToggle, onComment }) {
     const dispatch = useDispatch();
+    const posts = useSelector((state) => state.posts.posts); // Lấy posts từ Redux store
+    const post = posts.find(p => p._id === initialPost._id) || initialPost; // Dùng post từ store nếu có, fallback về initialPost
+
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isCommentModalOpen, setIsCommentModalOpen] = useState(false);
     const [currentSlide, setCurrentSlide] = useState(0);
@@ -114,13 +118,40 @@ function PostCard({ post, userId, onLikeToggle, onComment }) {
 
     // Xử lý like/unlike comment
     const handleLikeComment = (commentId) => {
-        const isCommentLiked = post.comments.find(c => c._id === commentId)?.likes?.some(like => like._id === userId);
+        const comment = post.comments.find(c => c._id === commentId);
+        const isCommentLiked = comment?.likes?.some(like => (like._id || like) === userId) || false;
         if (isCommentLiked) {
             dispatch(unlikeComment({ postId: post._id, commentId, userId }));
         } else {
             dispatch(likeComment({ postId: post._id, commentId, userId }));
         }
+        // Làm mới danh sách bình luận để đảm bảo đồng bộ
+        setTimeout(() => {
+            dispatch(fetchComments(post._id));
+        }, 100);
     };
+
+    // Xử lý xóa bình luận
+    const handleDeleteComment = (commentId) => {
+        dispatch(deleteComment({ postId: post._id, commentId }));
+    };
+
+    // Menu cho tùy chọn xóa bình luận
+    const commentMenu = (commentId) => ({
+        items: [
+            {
+                key: 'delete',
+                label: 'Delete',
+                danger: true,
+                onClick: () => handleDeleteComment(commentId),
+            },
+            {
+                key: 'cancel',
+                label: 'Cancel',
+            },
+        ],
+    });
+
 
     const handleVisibilityChange = useCallback((entries) => {
         const [entry] = entries;
@@ -223,7 +254,7 @@ function PostCard({ post, userId, onLikeToggle, onComment }) {
                 styles={{ padding: 0, height: '80vh' }}
                 okButtonProps={{ style: { display: 'none' } }}
                 cancelButtonProps={{ style: { display: 'none' } }}
-                bodyStyle={{ padding: 0 }}
+                style={{ padding: 0 }}
             >
                 <div className="flex h-full">
                     {/* Left Side: Media - Ẩn trên màn hình nhỏ */}
@@ -315,48 +346,64 @@ function PostCard({ post, userId, onLikeToggle, onComment }) {
                             </div>
 
                             {/* Comments List */}
-                            {post.comments.length > 0 && (
-                                <div className="text-sm text-gray-600">
-                                    {post.comments.map((comment, index) => {
-                                        const isCommentLiked = comment.likes?.some(like => like._id === userId);
-                                        return (
-                                            <div key={comment._id} className="flex items-start mb-4">
-                                                <div className="mr-2">
-                                                    <Avatar
-                                                        src={comment.user?.profile?.avatar || `https://i.pravatar.cc/150?u=${comment.user?._id}`}
-                                                        icon={<UserOutlined />}
-                                                        size={24}
-                                                    />
+                            {post.comments.map((comment, index) => {
+                                const isCommentLiked = comment.likes?.some(like => (like._id || like) === userId) || false;
+                                const likeCount = comment.likes?.length || 0;
+                                const isCommentOwner = comment.user?._id === userId;
+                                let likeText = '';
+                                if (likeCount === 1) {
+                                    likeText = '1 like';
+                                } else if (likeCount > 1) {
+                                    likeText = `${likeCount} likes`;
+                                }
+
+                                return (
+                                    <div
+                                        key={comment._id}
+                                        className="flex items-start mb-5 group relative"
+                                    >
+                                        <div className="mr-3">
+                                            <Avatar
+                                                src={comment.user?.profile?.avatar || `https://i.pravatar.cc/150?u=${comment.user?._id}`}
+                                                icon={<UserOutlined />}
+                                                size={32} // ⬅️ Tăng từ 24 → 32
+                                            />
+                                        </div>
+                                        <div className="flex-1 text-[15px] leading-snug">
+                                            <div className="flex justify-between items-center">
+                                                <div>
+                                                    <span className="font-semibold mr-2">{comment.user?.username || `user${comment.user?._id}`}</span>
+                                                    <span>{comment.text}</span>
                                                 </div>
-                                                <div className="flex-1">
-                                                    <div className="flex justify-between items-center">
-                                                        <div>
-                                                            <span className="font-semibold mr-2">{comment.user?.username || `user${comment.user?._id}`}</span>
-                                                            <span>{comment.text}</span>
-                                                        </div>
-                                                        <span
-                                                            className="cursor-pointer ml-4"
-                                                            onClick={() => handleLikeComment(comment._id)}
-                                                        >
-                                                            {isCommentLiked ? (
-                                                                <HeartFilled className="text-red-500 text-lg" />
-                                                            ) : (
-                                                                <HeartOutlined className="text-gray-600 text-lg" />
-                                                            )}
-                                                        </span>
-                                                    </div>
-                                                    <div className="flex items-center mt-1 ml-1">
-                                                        <span className="text-xs text-gray-400">{commentTimes[index]}</span>
-                                                        {comment.likes?.length > 0 && (
-                                                            <span className="text-xs text-gray-600 ml-2">{comment.likes.length} likes</span>
-                                                        )}
-                                                    </div>
-                                                </div>
+                                                <span
+                                                    className="cursor-pointer ml-4"
+                                                    onClick={() => handleLikeComment(comment._id)}
+                                                >
+                                                    {isCommentLiked ? (
+                                                        <HeartFilled className="text-red-500 text-lg" />
+                                                    ) : (
+                                                        <HeartOutlined className="text-gray-600 text-lg" />
+                                                    )}
+                                                </span>
                                             </div>
-                                        );
-                                    })}
-                                </div>
-                            )}
+                                            <div className="flex items-center mt-1 ml-1 relative text-[13px] text-gray-500">
+                                                <span>{commentTimes[index]}</span>
+                                                <span className="ml-2 min-w-[40px]">{likeText || ''}</span>
+
+                                                {isCommentOwner && (
+                                                    <Dropdown menu={commentMenu(comment._id)} trigger={['click']}>
+                                                        <span className="ml-2 cursor-pointer font-bold opacity-0 group-hover:opacity-100 transition-opacity">
+                                                            <IoIosMore />
+                                                        </span>
+                                                    </Dropdown>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+
+
                         </div>
 
                         {/* Likes and Actions */}

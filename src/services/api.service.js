@@ -27,24 +27,24 @@ const createCommentAPI = (postId, userId, text) => {
     return axios.post(URL_BACKEND, { post: postId, user: userId, text });
 }
 
-const deleteCommentAPI = (commentId) => {
-    const URL_BACKEND = `/v1/api/comments/${commentId}`;
-    return axios.delete(URL_BACKEND);
-}
-
 const updateCommentAPI = (commentId, text) => {
     const URL_BACKEND = `/v1/api/comments/${commentId}`;
     return axios.patch(URL_BACKEND, { text });
 }
 
 const likeCommentAPI = (commentId, userId) => {
-    const URL_BACKEND = `/v1/api/comments/like-comment`;
+    const URL_BACKEND = `/v1/api/like-comment`;
     return axios.post(URL_BACKEND, { commentId, userId });
 }
 
 const unlikeCommentAPI = (commentId, userId) => {
-    const URL_BACKEND = `/v1/api/comments/unlike-comment`;
+    const URL_BACKEND = `/v1/api/unlike-comment`;
     return axios.post(URL_BACKEND, { commentId, userId });
+}
+
+const deleteCommentAPI = (commentId) => {
+    const URL_BACKEND = `/v1/api/comments`;
+    return axios.delete(URL_BACKEND, { data: { id: commentId } });
 }
 
 export {
@@ -56,5 +56,5 @@ export {
     deleteCommentAPI,
     updateCommentAPI,
     likeCommentAPI,
-    unlikeCommentAPI
+    unlikeCommentAPI,
 };
