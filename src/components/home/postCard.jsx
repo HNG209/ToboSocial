@@ -1,7 +1,5 @@
 import { Card, Avatar, Modal, Button, Input, Menu, Dropdown, notification } from 'antd';
 import { BarsOutlined, HeartOutlined, HeartFilled, MessageOutlined, SendOutlined, UserOutlined, LeftOutlined, RightOutlined, SoundOutlined, AudioMutedOutlined } from '@ant-design/icons';
-import { Card, Avatar, Modal, Button, Input, Menu, Dropdown, notification } from 'antd';
-import { BarsOutlined, HeartOutlined, HeartFilled, MessageOutlined, SendOutlined, UserOutlined, LeftOutlined, RightOutlined, SoundOutlined, AudioMutedOutlined } from '@ant-design/icons';
 import { FiBookmark } from 'react-icons/fi';
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import Slider from 'react-slick';
@@ -25,23 +23,23 @@ const timeAgo = (date, referenceTime) => {
     return `${Math.floor(diffInSeconds / 604800)}w`;
 };
 
+// Hàm sao chép liên kết vào clipboard
 const copyToClipboard = (text) => {
     navigator.clipboard.writeText(text).then(() => {
         notification.success({
-            message: 'Đã sao chép liên kết!',
-            placement: 'topCenter',
-            duration: 2, // Hiển thị thông báo 2 giây rồi tự tắt
+            message: 'Link Copied',
+            description: 'The post link has been copied to your clipboard.',
+            placement: 'topRight',
         });
     }).catch((error) => {
         console.error('Failed to copy:', error);
         notification.error({
-            message: 'Sao chép thất bại!',
-            description: 'Không thể sao chép liên kết. Vui lòng thử lại.',
-            placement: 'topCenter',
+            message: 'Copy Failed',
+            description: 'Failed to copy the link. Please try again.',
+            placement: 'topRight',
         });
     });
 };
-
 
 function PostCard({ post: initialPost, userId, onLikeToggle, onComment }) {
     const dispatch = useDispatch();
@@ -50,7 +48,6 @@ function PostCard({ post: initialPost, userId, onLikeToggle, onComment }) {
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isCommentModalOpen, setIsCommentModalOpen] = useState(false);
-    const [isShareModalVisible, setIsShareModalVisible] = useState(false);
     const [isShareModalVisible, setIsShareModalVisible] = useState(false);
     const [currentSlide, setCurrentSlide] = useState(0);
     const [isMuted, setIsMuted] = useState(true);
@@ -254,8 +251,6 @@ function PostCard({ post: initialPost, userId, onLikeToggle, onComment }) {
 
     const shareLink = `${window.location.origin}/posts/${post._id}`;
 
-    const shareLink = `${window.location.origin}/posts/${post._id}`;
-
     return (
         <div className="border-b border-gray-200 pb-4 bg-white" ref={cardRef}>
             {/* Header */}
@@ -312,23 +307,6 @@ function PostCard({ post: initialPost, userId, onLikeToggle, onComment }) {
                             onClick={() => copyToClipboard(shareLink)}
                         >
                             Copy
-                        </Button>
-                    </div>
-                    {/* Placeholder for Other Sharing Options (Instagram-like) */}
-                    <div className="flex flex-col gap-2">
-                        <Button
-                            icon={<MessageOutlined />}
-                            disabled
-                            className="text-left"
-                        >
-                            Send in Direct Message
-                        </Button>
-                        <Button
-                            icon={<SendOutlined />}
-                            disabled
-                            className="text-left"
-                        >
-                            Share to Other Apps
                         </Button>
                     </div>
                 </div>
@@ -438,7 +416,7 @@ function PostCard({ post: initialPost, userId, onLikeToggle, onComment }) {
 
                             {/* Comments List */}
                             {post.comments.map((comment, index) => {
-                                const isCommentLiked = comment.likes?.some(lake => (lake._id || lake) === userId) || false;
+                                const isCommentLiked = comment.likes?.some(like => (like._id || like) === userId) || false;
                                 const likeCount = comment.likes?.length || 0;
                                 const isCommentOwner = comment.user?._id === userId;
                                 let likeText = '';
@@ -457,7 +435,6 @@ function PostCard({ post: initialPost, userId, onLikeToggle, onComment }) {
                                             <Avatar
                                                 src={comment.user?.profile?.avatar || `https://i.pravatar.cc/150?u=${comment.user?._id}`}
                                                 icon={<UserOutlined />}
-                                                size={32}
                                                 size={32}
                                             />
                                         </div>
@@ -510,14 +487,6 @@ function PostCard({ post: initialPost, userId, onLikeToggle, onComment }) {
                                             onClick={handleLikeClick}
                                         />
                                     )}
-                                    <MessageOutlined
-                                        className="text-black hover:text-gray-400 cursor-pointer"
-                                        onClick={showCommentModal}
-                                    />
-                                    <SendOutlined
-                                        className="text-black hover:text-gray-400 cursor-pointer"
-                                        onClick={showShareModal}
-                                    />
                                     <MessageOutlined
                                         className="text-black hover:text-gray-400 cursor-pointer"
                                         onClick={showCommentModal}
@@ -627,10 +596,6 @@ function PostCard({ post: initialPost, userId, onLikeToggle, onComment }) {
                     <MessageOutlined
                         className="text-black hover:text-gray-400 cursor-pointer"
                         onClick={showCommentModal}
-                    />
-                    <SendOutlined
-                        className="text-black hover:text-gray-400 cursor-pointer"
-                        onClick={showShareModal}
                     />
                     <SendOutlined
                         className="text-black hover:text-gray-400 cursor-pointer"
