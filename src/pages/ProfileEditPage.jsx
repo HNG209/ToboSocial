@@ -12,7 +12,6 @@ export default function ProfileEditPage() {
     const file = useFileInput()(); // Get the file input from context
     const getPreviewUrl = usePreviewImage(); // Fetching function to get preview URL from context
     const setUploadedUrl = useSetUploadedImage(); // Fetching function to set uploaded image URL in context
-    const newAvatar = useUploadedImage()(); // Fetching function to get new avatar URL from context
 
     const [name, setName] = useState(currentUser.name);
     const [bio, setBio] = useState(currentUser.bio);
