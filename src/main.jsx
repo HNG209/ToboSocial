@@ -3,6 +3,8 @@ import ReactDOM from "react-dom/client";
 import { RouterProvider, createBrowserRouter } from "react-router-dom";
 import './styles/global.css'
 import './index.css'
+import "slick-carousel/slick/slick.css";
+import "slick-carousel/slick/slick-theme.css";
 import App from "./App";
 import ErrorPage from "./pages/error";
 import Home from "./pages/Home";
@@ -15,6 +17,9 @@ import RegisterPage from "./pages/RegisterPage";
 import ProfileEditPage from "./pages/ProfileEditPage";
 import ChangePassword from "./pages/ChangePassword";
 import ForgetPasswordPage from "./pages/ForgetPasswordPage";
+import { Provider } from "react-redux";
+import { store } from "./redux/store";
+import PostDetailPage from "./pages/client/PostDetailPage";
 
 
 
@@ -67,6 +72,10 @@ const router = createBrowserRouter([
           // </PrivateRoute>
         ),
       },
+      {
+        path: "/posts/:postId",
+        element: <PostDetailPage />,
+      },
     ],
   },
   {
@@ -79,12 +88,14 @@ const router = createBrowserRouter([
   },
   {
     path: "/forgetpassword",
-    element: (<ForgetPasswordPage/>)
+    element: (<ForgetPasswordPage />)
   }
 ]);
 
 ReactDOM.createRoot(document.getElementById("root")).render(
-  // <AuthWrapper>
-  <RouterProvider router={router} />
-  // </AuthWrapper>
+  <Provider store={store}>
+    {/* // <AuthWrapper> */}
+    <RouterProvider router={router} />
+    {/* // </AuthWrapper> */}
+  </Provider>
 );

@@ -1,37 +1,50 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import PostCard from '../components/home/postCard';
-import { getAllPosts } from '../services/api.service';
 import Stories from '../components/home/stories';
+import { fetchPosts, likePost, unlikePost, createComment } from '../redux/post/postsSlice';
 
 function Home() {
-    const [posts, setPosts] = useState([]);
+    const dispatch = useDispatch();
+    const posts = useSelector((state) => state.posts.posts);
+    const status = useSelector((state) => state.posts.status);
+    const userId = "662b00000000000000000005";
 
     useEffect(() => {
-        const fetchPosts = async () => {
-            try {
-                const data = await getAllPosts();
-                setPosts(data);
-            } catch (error) {
-                console.error("Error fetching posts:", error);
-            }
-        };
+        if (status === 'idle') {
+            dispatch(fetchPosts());
+        }
+    }, [dispatch, status]);
 
-        fetchPosts();
-    }, []);
+    const handleLikeToggle = (postId, isLiked) => {
+        if (isLiked) {
+            dispatch(unlikePost({ postId, userId }));
+        } else {
+            dispatch(likePost({ postId, userId }));
+        }
+    };
+
+    const handleComment = (postId, text) => {
+        dispatch(createComment({ postId, userId, text }));
+    };
 
     return (
         <div className="flex justify-center bg-white">
             <div className="w-full max-w-[630px] border-x border-gray-200 min-h-screen">
-                {/* Story Section */}
                 <Stories />
-
-                {/* Post Feed */}
-                {posts.map(post => (
-                    <PostCard key={post.id} post={post} />
-                ))}
+                {status === 'loading' && <p>Loading posts...</p>}
+                {status === 'succeeded' &&
+                    posts.map(post => (
+                        <PostCard
+                            key={post._id}
+                            post={post}
+                            userId={userId}
+                            onLikeToggle={handleLikeToggle}
+                            onComment={handleComment}
+                        />
+                    ))}
+                {status === 'failed' && <p>Error loading posts</p>}
             </div>
-
-            {/* Right Sidebar - Gợi ý follow */}
             <div className="hidden lg:block w-[320px] px-6 py-8">
                 <div className="flex items-center justify-between mb-6">
                     <div className="flex items-center">
