@@ -4,11 +4,26 @@ import PostThumb from "../components/layout/PostThumb";
 import React, { useEffect, useState } from "react";
 import { useNavigate } from 'react-router-dom';
 import { useProfile } from "../components/context/ProfileContext";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchPostByUser } from "../redux/profile/profileSlice";
 
 const ProfilePage = () => {
     const user = useProfile(); // Fetching user data from context
     const [isModalOpen, setIsModalOpen] = useState(false);
     const navigate = useNavigate();
+
+    const dispatch = useDispatch();
+    const posts = useSelector((state) => state.profile.posts);
+    const status = useSelector((state) => state.profile.status);
+    const userId = "662b00000000000000000003";// // Example userId
+
+    useEffect(() => {
+        if (status === 'idle') {
+            dispatch(fetchPostByUser({userId, page: 1, limit: 10}));
+        }
+    }, [dispatch, status]);
+
+    console.log(posts)
 
     const showModal = () => {
         setIsModalOpen(true);
@@ -60,10 +75,10 @@ const ProfilePage = () => {
                 okButtonProps={{ style: { display: 'none' } }}
                 cancelButtonProps={{ style: { display: 'none' } }}>
 
-                <Button size={'medium'} className='w-full mb-2' onClick={() => {navigate('/edit-profile')}}>
+                <Button size={'medium'} className='w-full mb-2' onClick={() => { navigate('/edit-profile') }}>
                     Edit personal information
                 </Button>
-                <Button size={'medium'} className='w-full mb-2' onClick={() => {navigate('/change-password')}}>
+                <Button size={'medium'} className='w-full mb-2' onClick={() => { navigate('/change-password') }}>
                     Change password
                 </Button>
             </Modal>
@@ -76,14 +91,20 @@ const ProfilePage = () => {
                 {/* <h2 className="text-2xl text-center mt-4">Posts</h2> */}
                 <div className="grid grid-cols-3 gap-4 p-4">
                     {/* Map through posts and display them here */}
+                    {/* <PostThumb post={{}} />
                     <PostThumb post={{}} />
                     <PostThumb post={{}} />
                     <PostThumb post={{}} />
                     <PostThumb post={{}} />
                     <PostThumb post={{}} />
                     <PostThumb post={{}} />
-                    <PostThumb post={{}} />
-                    <PostThumb post={{}} />
+                    <PostThumb post={{}} /> */}
+                    {
+                        posts.map((post, index) => (
+                            console.log(post),
+                            <PostThumb key={index} post={post} />
+                        ))
+                    }
                 </div>
             </div>
         </>
