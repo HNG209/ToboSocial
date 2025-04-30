@@ -1,4 +1,4 @@
-import { Card, Avatar, Modal, Button, Input, Menu, Dropdown, notification } from 'antd';
+import { Card, Avatar, Modal, Button, Input, Menu, Dropdown, notification, Select } from 'antd';
 import { BarsOutlined, HeartOutlined, HeartFilled, MessageOutlined, SendOutlined, UserOutlined, LeftOutlined, RightOutlined, SoundOutlined, AudioMutedOutlined } from '@ant-design/icons';
 import { FiBookmark } from 'react-icons/fi';
 import React, { useState, useRef, useEffect, useCallback } from 'react';
@@ -10,6 +10,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { deleteComment, fetchComments, likeComment, unlikeComment } from '../../redux/post/postsSlice';
 import { IoIosMore } from 'react-icons/io';
 import ProfileCard from './ProfileCard ';
+import { reportPostAPI } from '../../services/report.service';
 
 // Hàm tính thời gian
 const timeAgo = (date, referenceTime) => {
@@ -44,12 +45,16 @@ const copyToClipboard = (text) => {
 
 function PostCard({ post: initialPost, userId, onLikeToggle, onComment }) {
     const dispatch = useDispatch();
-    const posts = useSelector((state) => state.posts.posts); // Lấy posts từ Redux store
-    const post = posts.find(p => p._id === initialPost._id) || initialPost; // Dùng post từ store nếu có, fallback về initialPost
+    const posts = useSelector((state) => state.posts.posts);
+    const post = posts.find(p => p._id === initialPost._id) || initialPost;
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isCommentModalOpen, setIsCommentModalOpen] = useState(false);
     const [isShareModalVisible, setIsShareModalVisible] = useState(false);
+    const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+    const [reportReason, setReportReason] = useState('');
+    const [reportDescription, setReportDescription] = useState('');
+    const [reportLoading, setReportLoading] = useState(false);
     const [currentSlide, setCurrentSlide] = useState(0);
     const [isMuted, setIsMuted] = useState(true);
     const [commentText, setCommentText] = useState('');
@@ -66,7 +71,6 @@ function PostCard({ post: initialPost, userId, onLikeToggle, onComment }) {
     const profileCardTimeoutRef = useRef(null);
     const [authorState, setAuthorState] = useState(post.author);
 
-
     const showModal = () => setIsModalOpen(true);
     const handleOk = () => setIsModalOpen(false);
     const handleCancel = () => setIsModalOpen(false);
@@ -81,23 +85,64 @@ function PostCard({ post: initialPost, userId, onLikeToggle, onComment }) {
     const showShareModal = () => {
         setIsShareModalVisible(true);
     };
-
     const handleShareModalCancel = () => {
         setIsShareModalVisible(false);
+    };
+
+    const showReportModal = () => {
+        setIsModalOpen(false); // Đóng modal chính
+        setIsReportModalOpen(true); // Mở modal báo cáo
+    };
+    const handleReportModalOk = async () => {
+        if (!reportReason) {
+            notification.error({
+                message: 'Report Failed',
+                description: 'Please select a reason for reporting.',
+                placement: 'topRight',
+            });
+            return;
+        }
+
+        setReportLoading(true);
+        try {
+            await reportPostAPI(post._id, userId, reportReason, reportDescription);
+            setIsReportModalOpen(false);
+            setReportReason('');
+            setReportDescription('');
+            notification.success({
+                message: 'Report Submitted',
+                description: 'Thanks for reporting this post. We will review it soon.',
+                placement: 'topRight',
+            });
+        } catch (err) {
+            console.error('Error reporting post:', err);
+            notification.error({
+                message: 'Report Failed',
+                description: err.message || 'Failed to submit the report. Please try again.',
+                placement: 'topRight',
+            });
+        } finally {
+            setReportLoading(false);
+        }
+    };
+    const handleReportModalCancel = () => {
+        setIsReportModalOpen(false);
+        setReportReason('');
+        setReportDescription('');
     };
 
     // Xử lý sao chép liên kết
     const handleCopyLink = () => {
         const shareLink = `${window.location.origin}/posts/${post._id}`;
         copyToClipboard(shareLink);
-        // Không đóng modal để người dùng có thể tiếp tục chọn các hành động khác
+        setIsModalOpen(false);
     };
 
     // Xử lý đi đến bài viết
     const handleGoToPost = () => {
         const shareLink = `${window.location.origin}/posts/${post._id}`;
-        window.open(shareLink, '_blank'); // Mở liên kết trong tab mới
-        setIsModalOpen(false); // Đóng modal sau khi mở tab
+        window.open(shareLink, '_blank');
+        setIsModalOpen(false);
     };
 
     const sliderSettings = {
@@ -171,7 +216,6 @@ function PostCard({ post: initialPost, userId, onLikeToggle, onComment }) {
         } else {
             dispatch(likeComment({ postId: post._id, commentId, userId }));
         }
-        // Làm mới danh sách bình luận để đảm bảo đồng bộ
         setTimeout(() => {
             dispatch(fetchComments(post._id));
         }, 100);
@@ -181,6 +225,21 @@ function PostCard({ post: initialPost, userId, onLikeToggle, onComment }) {
     const handleDeleteComment = (commentId) => {
         dispatch(deleteComment({ postId: post._id, commentId }));
     };
+
+    // Menu cho tùy chọn bài viết
+    const postMenu = (
+        <Menu>
+            <Menu.Item key="report" onClick={showReportModal}>
+                Report
+            </Menu.Item>
+            <Menu.Item key="copyLink" onClick={handleCopyLink}>
+                Copy Link
+            </Menu.Item>
+            <Menu.Item key="goToPost" onClick={handleGoToPost}>
+                Go to Post
+            </Menu.Item>
+        </Menu>
+    );
 
     // Menu cho tùy chọn xóa bình luận
     const commentMenu = (commentId) => ({
@@ -213,12 +272,12 @@ function PostCard({ post: initialPost, userId, onLikeToggle, onComment }) {
         }
     }, [currentSlide, post.mediaFiles]);
 
-    // Cập nhật thời gian bài đăng khi component mount
+    // Cập nhật thời gian bài đăng
     useEffect(() => {
         setPostTime(timeAgo(post.createdAt, loadTime.current));
     }, [post]);
 
-    // Cập nhật thời gian bình luận và đồng bộ slider + video khi mở modal
+    // Cập nhật thời gian bình luận và đồng bộ slider
     useEffect(() => {
         if (isCommentModalOpen) {
             const now = new Date();
@@ -254,19 +313,18 @@ function PostCard({ post: initialPost, userId, onLikeToggle, onComment }) {
         commentVideoRefs.current = [];
     }, [post]);
 
-    // Hàm xử lý khi hover vào
+    // Xử lý hover cho ProfileCard
     const handleMouseEnter = () => {
         if (profileCardTimeoutRef.current) {
-            clearTimeout(profileCardTimeoutRef.current); // Hủy timeout nếu có
+            clearTimeout(profileCardTimeoutRef.current);
         }
         setShowProfileCard(true);
     };
 
-    // Hàm xử lý khi rời chuột
     const handleMouseLeave = () => {
         profileCardTimeoutRef.current = setTimeout(() => {
             setShowProfileCard(false);
-        }, 200); // Độ trễ 200ms trước khi ẩn
+        }, 200);
     };
 
     const shareLink = `${window.location.origin}/posts/${post._id}`;
@@ -292,8 +350,8 @@ function PostCard({ post: initialPost, userId, onLikeToggle, onComment }) {
                             {showProfileCard && (
                                 <div
                                     className="absolute z-50 top-6 left-0"
-                                    onMouseEnter={() => clearTimeout(profileCardTimeoutRef.current)} // Giữ hiển thị khi hover vào ProfileCard
-                                    onMouseLeave={handleMouseLeave} // Kích hoạt lại timeout khi rời ProfileCard
+                                    onMouseEnter={() => clearTimeout(profileCardTimeoutRef.current)}
+                                    onMouseLeave={handleMouseLeave}
                                 >
                                     <ProfileCard user={authorState} onFollowChange={(newAuthor) => setAuthorState(newAuthor)} />
                                 </div>
@@ -302,22 +360,44 @@ function PostCard({ post: initialPost, userId, onLikeToggle, onComment }) {
                         <span className="text-xs text-gray-400">{postTime}</span>
                     </div>
                 </div>
-                <BarsOutlined className="text-lg text-black" onClick={showModal} />
+                <Dropdown overlay={postMenu} trigger={['click']}>
+                    <IoIosMore className="text-lg text-black cursor-pointer" />
+                </Dropdown>
             </div>
 
-            {/* Modal Actions */}
+            {/* Report Modal */}
             <Modal
-                closable={false}
-                centered={true}
-                open={isModalOpen}
-                onOk={handleOk}
-                onCancel={handleCancel}
-                okButtonProps={{ style: { display: 'none' } }}
-                cancelButtonProps={{ style: { display: 'none' } }}
+                title="Report Post"
+                open={isReportModalOpen}
+                onOk={handleReportModalOk}
+                onCancel={handleReportModalCancel}
+                okText="Submit"
+                cancelText="Cancel"
+                confirmLoading={reportLoading}
+                centered
             >
-                <Button danger size="medium" className="w-full mb-2" onClick={handleOk}>Báo cáo</Button>
-                <Button size="medium" className="w-full mb-2" onClick={handleCopyLink}>Sao chép liên kết</Button>
-                <Button size="medium" className="w-full" onClick={handleGoToPost}>Đi đến bài viết</Button>
+                <div className="flex flex-col gap-4">
+                    <Select
+                        placeholder="Select a reason"
+                        value={reportReason}
+                        onChange={(value) => setReportReason(value)}
+                        options={[
+                            { value: 'spam', label: 'Spam' },
+                            { value: 'inappropriate', label: 'Inappropriate content' },
+                            { value: 'harassment', label: 'Harassment or bullying' },
+                            { value: 'hate_speech', label: 'Hate speech' },
+                            { value: 'violence', label: 'Violence or dangerous organizations' },
+                            { value: 'misinformation', label: 'False information' },
+                        ]}
+                        className="w-full"
+                    />
+                    <Input.TextArea
+                        placeholder="Provide additional details (optional)"
+                        value={reportDescription}
+                        onChange={(e) => setReportDescription(e.target.value)}
+                        rows={4}
+                    />
+                </div>
             </Modal>
 
             {/* Share Modal */}
@@ -330,7 +410,6 @@ function PostCard({ post: initialPost, userId, onLikeToggle, onComment }) {
                 width={400}
             >
                 <div className="flex flex-col gap-4">
-                    {/* Copy Link Section */}
                     <div className="flex items-center bg-gray-100 p-2 rounded">
                         <Input
                             value={shareLink}
@@ -361,7 +440,6 @@ function PostCard({ post: initialPost, userId, onLikeToggle, onComment }) {
                 style={{ padding: 0 }}
             >
                 <div className="flex h-full">
-                    {/* Left Side: Media - Ẩn trên màn hình nhỏ */}
                     <div className="hidden md:block w-3/5 h-full bg-black relative">
                         <Slider ref={commentSliderRef} {...sliderSettings}>
                             {post.mediaFiles.map((media, index) => (
@@ -414,9 +492,7 @@ function PostCard({ post: initialPost, userId, onLikeToggle, onComment }) {
                         )}
                     </div>
 
-                    {/* Right Side: Comments */}
                     <div className="w-full md:w-2/5 h-full flex flex-col">
-                        {/* Post Header */}
                         <div className="flex items-center p-4 border-b border-gray-200">
                             <Avatar
                                 src={post.author?.avatar || `https://i.pravatar.cc/150?u=${post.author?._id}`}
@@ -430,9 +506,7 @@ function PostCard({ post: initialPost, userId, onLikeToggle, onComment }) {
                             </div>
                         </div>
 
-                        {/* Caption and Comments */}
                         <div className="p-4 overflow-y-auto" style={{ maxHeight: 'calc(80vh - 280px)' }}>
-                            {/* Caption */}
                             <div className="flex items-center mb-4">
                                 <Avatar
                                     src={post.author?.avatar || `https://i.pravatar.cc/150?u=${post.author?._id}`}
@@ -449,7 +523,6 @@ function PostCard({ post: initialPost, userId, onLikeToggle, onComment }) {
                                 </div>
                             </div>
 
-                            {/* Comments List */}
                             {post.comments.map((comment, index) => {
                                 const isCommentLiked = comment.likes?.some(like => (like._id || like) === userId) || false;
                                 const likeCount = comment.likes?.length || 0;
@@ -507,7 +580,6 @@ function PostCard({ post: initialPost, userId, onLikeToggle, onComment }) {
                             })}
                         </div>
 
-                        {/* Likes and Actions */}
                         <div className="p-4 border-t border-gray-200">
                             <div className="flex justify-between text-2xl mb-2">
                                 <div className="flex gap-3">
@@ -538,7 +610,6 @@ function PostCard({ post: initialPost, userId, onLikeToggle, onComment }) {
                             </div>
                         </div>
 
-                        {/* Comment Input */}
                         <div className="p-4 border-t border-gray-200">
                             <div className="flex items-center">
                                 <Input
