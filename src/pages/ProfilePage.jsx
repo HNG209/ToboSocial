@@ -5,7 +5,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from 'react-router-dom';
 import { useProfile } from "../components/context/ProfileContext";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchPosts } from "../redux/post/postsSlice";
+import { fetchPostByUser } from "../redux/profile/profileSlice";
 
 const ProfilePage = () => {
     const user = useProfile(); // Fetching user data from context
@@ -13,13 +13,13 @@ const ProfilePage = () => {
     const navigate = useNavigate();
 
     const dispatch = useDispatch();
-    const posts = useSelector((state) => state.posts.posts);
-    const status = useSelector((state) => state.posts.status);
-    const userId = "662b00000000000000000005";// // Example userId
+    const posts = useSelector((state) => state.profile.posts);
+    const status = useSelector((state) => state.profile.status);
+    const userId = "662b00000000000000000003";// // Example userId
 
     useEffect(() => {
         if (status === 'idle') {
-            dispatch(fetchPosts());
+            dispatch(fetchPostByUser({userId, page: 1, limit: 10}));
         }
     }, [dispatch, status]);
 

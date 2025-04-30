@@ -118,18 +118,19 @@ export const fetchPostDetail = createAsyncThunk('posts/fetchPostDetail', async (
     }
 });
 
+
 const postsSlice = createSlice({
     name: 'posts',
     initialState: {
-        posts: [],
-        postDetail: null,
-        status: 'idle',
-        error: null,
+        posts: [], // Danh sách bài viết
+        postDetail: null, // Chi tiết bài viết
+        status: 'idle', // Trạng thái tải dữ liệu
+        error: null, // Lỗi nếu có
     },
     reducers: {},
     extraReducers: (builder) => {
         builder
-            // ===== Posts =====
+            // ===== Fetch All Posts =====
             .addCase(fetchPosts.pending, (state) => {
                 state.status = 'loading';
             })
@@ -268,6 +269,8 @@ const postsSlice = createSlice({
                 console.error('Unlike comment rejected:', action.payload);
                 state.error = action.payload;
             })
+
+            // ===== Fetch Post Detail =====
             .addCase(fetchPostDetail.pending, (state) => {
                 state.status = 'loading';
                 state.postDetail = null;
@@ -279,7 +282,7 @@ const postsSlice = createSlice({
             .addCase(fetchPostDetail.rejected, (state, action) => {
                 state.status = 'failed';
                 state.error = action.payload;
-            })
+            });
     },
 });
 
