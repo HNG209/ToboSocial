@@ -1,0 +1,21 @@
+.custom-dots {
+    bottom: 8px;
+    display: flex !important;
+    justify-content: center;
+    align-items: center;
+}
+
+.custom-dots li {
+    margin: 0 2px;
+}
+
+.custom-dots li.slick-active div {
+    opacity: 0.9 !important;
+    background-color: #fff !important;
+}
+
+.ant-avatar {
+    border: 2px solid transparent;
+    background: linear-gradient(white, white) padding-box,
+        linear-gradient(to right, #f09433, #e6683c, #dc2743, #cc2366, #bc1888) border-box;
+}
