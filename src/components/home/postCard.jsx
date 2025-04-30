@@ -9,6 +9,7 @@ import '../../styles/home.css';
 import { useDispatch, useSelector } from 'react-redux';
 import { deleteComment, fetchComments, likeComment, unlikeComment } from '../../redux/post/postsSlice';
 import { IoIosMore } from 'react-icons/io';
+import ProfileCard from './ProfileCard ';
 
 // Hàm tính thời gian
 const timeAgo = (date, referenceTime) => {
@@ -61,6 +62,10 @@ function PostCard({ post: initialPost, userId, onLikeToggle, onComment }) {
     const commentVideoRefs = useRef([]);
     const isLiked = post.likes.some(like => like._id === userId);
     const loadTime = useRef(new Date());
+    const [showProfileCard, setShowProfileCard] = useState(false);
+    const profileCardTimeoutRef = useRef(null);
+    const [authorState, setAuthorState] = useState(post.author);
+
 
     const showModal = () => setIsModalOpen(true);
     const handleOk = () => setIsModalOpen(false);
@@ -249,6 +254,21 @@ function PostCard({ post: initialPost, userId, onLikeToggle, onComment }) {
         commentVideoRefs.current = [];
     }, [post]);
 
+    // Hàm xử lý khi hover vào
+    const handleMouseEnter = () => {
+        if (profileCardTimeoutRef.current) {
+            clearTimeout(profileCardTimeoutRef.current); // Hủy timeout nếu có
+        }
+        setShowProfileCard(true);
+    };
+
+    // Hàm xử lý khi rời chuột
+    const handleMouseLeave = () => {
+        profileCardTimeoutRef.current = setTimeout(() => {
+            setShowProfileCard(false);
+        }, 200); // Độ trễ 200ms trước khi ẩn
+    };
+
     const shareLink = `${window.location.origin}/posts/${post._id}`;
 
     return (
@@ -263,7 +283,22 @@ function PostCard({ post: initialPost, userId, onLikeToggle, onComment }) {
                         size={32}
                     />
                     <div className="ml-3 flex flex-col">
-                        <span className="font-semibold text-black">{post.author?.username || `user${post.author?._id}`}</span>
+                        <div
+                            className="relative group"
+                            onMouseEnter={handleMouseEnter}
+                            onMouseLeave={handleMouseLeave}
+                        >
+                            <span className="font-semibold text-black cursor-pointer">{post.author?.username}</span>
+                            {showProfileCard && (
+                                <div
+                                    className="absolute z-50 top-6 left-0"
+                                    onMouseEnter={() => clearTimeout(profileCardTimeoutRef.current)} // Giữ hiển thị khi hover vào ProfileCard
+                                    onMouseLeave={handleMouseLeave} // Kích hoạt lại timeout khi rời ProfileCard
+                                >
+                                    <ProfileCard user={authorState} onFollowChange={(newAuthor) => setAuthorState(newAuthor)} />
+                                </div>
+                            )}
+                        </div>
                         <span className="text-xs text-gray-400">{postTime}</span>
                     </div>
                 </div>

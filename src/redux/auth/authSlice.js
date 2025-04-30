@@ -1,37 +1,65 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { loginAPI, logoutAPI, registerAPI, forgotPasswordAPI } from '../../services/user.service';
+import {
+    loginAPI,
+    logoutAPI,
+    registerAPI,
+    forgotPasswordAPI,
+    followUserAPI,
+    unfollowUserAPI
+} from '../../services/user.service';
 
-// Lấy user từ localStorage nếu có
 const userFromStorage = localStorage.getItem('user')
     ? JSON.parse(localStorage.getItem('user'))
     : null;
 
-// Async thunk login
+// Login
 export const login = createAsyncThunk('auth/login', async ({ email, password }, { rejectWithValue }) => {
     try {
         const response = await loginAPI(email, password);
-        localStorage.setItem('user', JSON.stringify(response)); // Lưu user
+        localStorage.setItem('user', JSON.stringify(response));
         return response;
     } catch (error) {
         return rejectWithValue(error.message || 'Login failed');
     }
 });
 
-// Async thunk register
+// Follow
+export const followUser = createAsyncThunk('auth/followUser', async ({ targetUserId, currentUserId }, { rejectWithValue }) => {
+    try {
+        const response = await followUserAPI(targetUserId, currentUserId);
+        localStorage.setItem('user', JSON.stringify(response.user));
+        return response.user; // Chỉ trả về user object để cập nhật state
+    } catch (error) {
+        return rejectWithValue(error.error || 'Follow failed');
+    }
+});
+
+// Unfollow
+export const unfollowUser = createAsyncThunk('auth/unfollowUser', async ({ targetUserId, currentUserId }, { rejectWithValue }) => {
+    try {
+        const response = await unfollowUserAPI(targetUserId, currentUserId);
+        localStorage.setItem('user', JSON.stringify(response.user));
+        return response.user; // Chỉ trả về user object để cập nhật state
+    } catch (error) {
+        return rejectWithValue(error.error || 'Unfollow failed');
+    }
+});
+
+// Register
 export const register = createAsyncThunk('auth/register', async ({ username, email, password, fullName }, { rejectWithValue }) => {
     try {
         const response = await registerAPI(username, email, password, fullName);
-        localStorage.setItem('user', JSON.stringify(response)); // Auto login sau register
+        localStorage.setItem('user', JSON.stringify(response));
         return response;
     } catch (error) {
         return rejectWithValue(error.message || 'Register failed');
     }
 });
 
-// Async thunk logout
+// Logout
 export const logout = createAsyncThunk('auth/logout', async (_, { rejectWithValue }) => {
     try {
-        const response = await logoutAPI();
+        await logoutAPI();
         localStorage.removeItem('user');
         return true;
     } catch (error) {
@@ -39,7 +67,7 @@ export const logout = createAsyncThunk('auth/logout', async (_, { rejectWithValu
     }
 });
 
-// Async thunk forgot password
+// Forgot Password
 export const forgotPassword = createAsyncThunk('auth/forgotPassword', async (email, { rejectWithValue }) => {
     try {
         const response = await forgotPasswordAPI(email);
@@ -53,8 +81,8 @@ const authSlice = createSlice({
     name: 'auth',
     initialState: {
         user: userFromStorage,
-        status: 'idle', // idle | loading | succeeded | failed
-        error: null
+        status: 'idle',
+        error: null,
     },
     reducers: {},
     extraReducers: (builder) => {
@@ -72,6 +100,32 @@ const authSlice = createSlice({
                 state.status = 'failed';
                 state.error = action.payload;
             })
+            .addCase(followUser.pending, (state) => {
+                state.status = 'loading';
+                state.error = null;
+            })
+            .addCase(followUser.fulfilled, (state, action) => {
+                state.status = 'succeeded';
+                state.user = action.payload; // Cập nhật state.user với user object từ API
+                state.error = null;
+            })
+            .addCase(followUser.rejected, (state, action) => {
+                state.status = 'failed';
+                state.error = action.payload;
+            })
+            .addCase(unfollowUser.pending, (state) => {
+                state.status = 'loading';
+                state.error = null;
+            })
+            .addCase(unfollowUser.fulfilled, (state, action) => {
+                state.status = 'succeeded';
+                state.user = action.payload; // Cập nhật state.user với user object từ API
+                state.error = null;
+            })
+            .addCase(unfollowUser.rejected, (state, action) => {
+                state.status = 'failed';
+                state.error = action.payload;
+            })
             .addCase(register.pending, (state) => {
                 state.status = 'loading';
                 state.error = null;
@@ -85,21 +139,32 @@ const authSlice = createSlice({
                 state.status = 'failed';
                 state.error = action.payload;
             })
+            .addCase(logout.pending, (state) => {
+                state.status = 'loading';
+                state.error = null;
+            })
             .addCase(logout.fulfilled, (state) => {
-                state.user = null;
                 state.status = 'idle';
+                state.user = null;
+                state.error = null;
+            })
+            .addCase(logout.rejected, (state, action) => {
+                state.status = 'failed';
+                state.error = action.payload;
             })
             .addCase(forgotPassword.pending, (state) => {
                 state.status = 'loading';
+                state.error = null;
             })
             .addCase(forgotPassword.fulfilled, (state) => {
                 state.status = 'succeeded';
+                state.error = null;
             })
             .addCase(forgotPassword.rejected, (state, action) => {
                 state.status = 'failed';
                 state.error = action.payload;
             });
-    }
+    },
 });
 
 export default authSlice.reducer;
