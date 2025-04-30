@@ -20,6 +20,8 @@ import ForgetPasswordPage from "./pages/ForgetPasswordPage";
 import { Provider } from "react-redux";
 import { store } from "./redux/store";
 import PostDetailPage from "./pages/client/PostDetailPage";
+import SearchPage from "./components/home/SearchBar";
+import Profilex from "./pages/client/Profiles";
 
 
 
@@ -76,6 +78,14 @@ const router = createBrowserRouter([
         path: "/posts/:postId",
         element: <PostDetailPage />,
       },
+      {
+        path: "/search",
+        element: <SearchPage />
+      },
+      {
+        path: "/profile/:username",
+        element: <Profilex />
+      }
     ],
   },
   {

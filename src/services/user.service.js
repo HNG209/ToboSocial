@@ -51,11 +51,26 @@ const unfollowUserAPI = (targetUserId, currentUserId) => {
         });
 };
 
+const searchUsersAPI = (query) => {
+    const URL = `/v1/api/search?q=${encodeURIComponent(query)}`;
+    return axios.get(URL);
+};
+const getUserByUsernameAPI = (username) => {
+    const URL = `/v1/api/by-username/${encodeURIComponent(username)}`;
+    return axios.get(URL);
+};
+
+const getUserPostsAPI = (userId, page = 1, limit = 10) => {
+    const URL = `/v1/api/${userId}/posts?page=${page}&limit=${limit}`;
+    return axios.get(URL); // interceptor sẽ trả ra response.result
+};
+
 export {
     loginAPI,
     registerAPI,
     logoutAPI,
     forgotPasswordAPI,
     followUserAPI,
-    unfollowUserAPI
+    unfollowUserAPI,
+    searchUsersAPI, getUserByUsernameAPI, getUserPostsAPI
 };
