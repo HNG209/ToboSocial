@@ -58,6 +58,18 @@ const fetchPostByUserAPI = (userId, page = 1, limit = 10) => {
     return axios.get(URL_BACKEND);
 }
 
+//user api
+const getUserAPI = (userId) => {
+    const URL_BACKEND = `/v1/api/users/${userId}`;
+    return axios.get(URL_BACKEND);
+}
+
+//update user api
+const updateUserAPI = (data) => {
+    const URL_BACKEND = `/v1/api/users`;
+    return axios.put(URL_BACKEND, data);
+}
+
 export {
     fetchPostsAPI,
     likePostAPI,
@@ -69,5 +81,7 @@ export {
     likeCommentAPI,
     unlikeCommentAPI,
     fetchPostDetailAPI,
-    fetchPostByUserAPI
+    fetchPostByUserAPI,
+    getUserAPI,
+    updateUserAPI,
 };

@@ -3,27 +3,24 @@ import ProfileMenu from "../components/layout/ProfileMenu";
 import PostThumb from "../components/layout/PostThumb";
 import React, { useEffect, useState } from "react";
 import { useNavigate } from 'react-router-dom';
-import { useProfile } from "../components/context/ProfileContext";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchPostByUser } from "../redux/profile/profileSlice";
+import { fetchPostByUser, getCurrentUser } from "../redux/profile/profileSlice";
 
 const ProfilePage = () => {
-    const user = useProfile(); // Fetching user data from context
     const [isModalOpen, setIsModalOpen] = useState(false);
     const navigate = useNavigate();
 
     const dispatch = useDispatch();
-    const posts = useSelector((state) => state.profile.posts);
+    const posts = useSelector((state) => state.profile.posts); // current user's posts
+    const userData = useSelector((state) => state.profile.user); // current user's data
     const status = useSelector((state) => state.profile.status);
-    const userId = "662b00000000000000000003";// // Example userId
 
     useEffect(() => {
         if (status === 'idle') {
-            dispatch(fetchPostByUser({userId, page: 1, limit: 10}));
+            dispatch(getCurrentUser({}));
+            dispatch(fetchPostByUser({page: 1, limit: 10}));
         }
     }, [dispatch, status]);
-
-    console.log(posts)
 
     const showModal = () => {
         setIsModalOpen(true);
@@ -38,31 +35,31 @@ const ProfilePage = () => {
     return (
         <>
             <div className="relative flex flex-col items-center justify-center w-full bg-gray-50 mt-2">
-                <Avatar size={120} className="absolute top-0 left-0 z-10 m-4" src={user.avatar || 'https://res.cloudinary.com/dwaldcj4v/image/upload/v1745215451/sodmg5jwxc8m2pho0i8r.jpg'}>
+                <Avatar size={120} className="absolute top-0 left-0 z-10 m-4" src={userData?.profile?.avatar || 'https://res.cloudinary.com/dwaldcj4v/image/upload/v1745215451/sodmg5jwxc8m2pho0i8r.jpg'}>
                     <img src="https://i.pravatar.cc/150?u=user" alt="user" className="w-full object-cover max-h-[600px]" />
                 </Avatar>
                 <div className="flex flex-col items-center justify-center p-4 rounded-lg w-full max-w-md mx-auto">
-                    <h1 className="text-2xl font-bold">{user.name}</h1>
-                    <a href="" className="text-purple-700 hover:text-gray-500">{`@${user.username}`}</a>
+                    <h1 className="text-2xl font-bold">{userData?.fullName}</h1>
+                    <a href="" className="text-purple-700 hover:text-gray-500">{`@${userData?.username}`}</a>
                     <div className="flex items-center justify-center w-full mt-4">
                         <div className="mr-4">
                             <a href="" className="font-semibold hover:text-gray-500">Followers: </a>
-                            <span className="text-gray-500">{user.followers}</span>
+                            <span className="text-gray-500">{userData?.followers.length}</span>
                         </div>
                         <div className="mr-4">
                             <a href="" className="font-semibold hover:text-gray-500">Following: </a>
-                            <span className="text-gray-500">{user.following}</span>
+                            <span className="text-gray-500">{userData?.following.length}</span>
                         </div>
                         <div>
                             <a href="" className="font-semibold hover:text-gray-500">Posts: </a>
-                            <span className="text-gray-500">{user.posts}</span>
+                            <span className="text-gray-500">{userData?.postCount}</span>
                         </div>
                     </div>
                     <div>
                         <Button type="primary" danger className="mt-4" size="large" onClick={showModal}>Edit profile</Button>
                         <Button type="default" className="mt-4 ml-2" size="large">Settings</Button>
                     </div>
-                    <p className="text-gray-500 mt-2">{user.bio}</p>
+                    <p className="text-gray-500 mt-2">{userData?.profile?.bio}</p>
                 </div>
             </div>
 
