@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Table, Input, Button, Modal, Image, Popconfirm, Tag, message, DatePicker } from 'antd';
 import { SearchOutlined, EyeOutlined, DeleteOutlined } from '@ant-design/icons';
-import { fetchAdminPostsAPI, deletePostByAdminAPI } from '../../services/admin.service';
+import { fetchAdminPostsAPI, deletePostByAdminAPI, restorePostByAdminAPI } from '../../services/admin.service';
 import moment from 'moment';
 
 const { Search } = Input;
@@ -13,35 +13,45 @@ const PostManagement = () => {
     const [loading, setLoading] = useState(false);
     const [searchText, setSearchText] = useState('');
     const [dateRange, setDateRange] = useState([]);
+    const [statusFilter, setStatusFilter] = useState('all');
     const [pagination, setPagination] = useState({ current: 1, pageSize: 10 });
     const [selectedPost, setSelectedPost] = useState(null);
     const [isModalVisible, setIsModalVisible] = useState(false);
 
-    // Gọi API để lấy danh sách bài viết
     const fetchPosts = async (params = {}) => {
         try {
             setLoading(true);
-            const response = await fetchAdminPostsAPI({
+            const apiParams = {
                 limit: pagination.pageSize,
                 skip: (pagination.current - 1) * pagination.pageSize,
-                'filter[username]': searchText || undefined,
-                'filter[dateRange][startDate]': dateRange[0] ? dateRange[0].format('YYYY-MM-DD') : undefined,
-                'filter[dateRange][endDate]': dateRange[1] ? dateRange[1].format('YYYY-MM-DD') : undefined,
+                filter: {
+                    username: searchText ? searchText : undefined,
+                    dateRange: {
+                        startDate: dateRange[0] ? dateRange[0].format('YYYY-MM-DD') : undefined,
+                        endDate: dateRange[1] ? dateRange[1].format('YYYY-MM-DD') : undefined,
+                    },
+                    deleted:
+                        statusFilter === 'all' || statusFilter === 'reported'
+                            ? undefined
+                            : statusFilter === 'active'
+                                ? 'false'
+                                : 'true',
+                    reported: statusFilter === 'reported' ? 'true' : undefined, // Thêm reported
+                },
                 ...params,
-            });
-            // Xử lý dữ liệu trả về
-            const postsData = Array.isArray(response)
-                ? response
-                : response.posts || [];
+            };
+            const response = await fetchAdminPostsAPI(apiParams);
+            const postsData = Array.isArray(response) ? response : response.posts || [];
             const postsWithStatus = postsData.map((post) => ({
                 ...post,
                 deleted: post.deleted || false,
                 comments: post.comments || [],
+                likes: post.likes || [],
             }));
             setPosts(postsWithStatus);
-            setTotal(response.total || postsData.length); // Sử dụng total nếu có
+            setTotal(response.total || postsData.length);
         } catch (error) {
-            console.error('Error fetching posts:', error);
+            console.error('Error fetching posts:', error.response?.data || error.message);
             message.error('Lỗi khi tải danh sách bài viết');
         } finally {
             setLoading(false);
@@ -50,51 +60,53 @@ const PostManagement = () => {
 
     useEffect(() => {
         fetchPosts();
-    }, [pagination.current, pagination.pageSize, searchText, dateRange]);
+    }, [pagination.current, pagination.pageSize, searchText, dateRange, statusFilter]);
 
-    // Xử lý tìm kiếm
     const handleSearch = (value) => {
-        setSearchText(value);
+        const trimmedValue = value?.trim();
+        setSearchText(trimmedValue || '');
         setPagination({ ...pagination, current: 1 });
     };
 
-    // Xử lý lọc theo thời gian
     const handleDateChange = (dates) => {
         setDateRange(dates || []);
         setPagination({ ...pagination, current: 1 });
     };
 
-    // Xử lý thay đổi phân trang
     const handleTableChange = (newPagination) => {
         setPagination(newPagination);
     };
 
-    // Xử lý xóa/ẩn bài viết
     const handleDeletePost = async (postId) => {
         try {
-            await deletePostByAdminAPI(postId);
-            message.success('Xóa bài viết thành công');
-            setPosts((prev) => prev.filter((post) => post._id !== postId));
-            setTotal((prev) => prev - 1);
+            const post = posts.find(p => p._id === postId);
+            if (!post) throw new Error('Không tìm thấy bài viết');
+
+            if (post.deleted) {
+                await restorePostByAdminAPI(postId);
+                message.success('Khôi phục bài viết thành công');
+            } else {
+                await deletePostByAdminAPI(postId);
+                message.success('Xóa bài viết thành công');
+            }
+
+            fetchPosts();
         } catch (error) {
-            console.error('Error deleting post:', error);
-            message.error('Lỗi khi xóa bài viết');
+            console.error('Error handling post:', error.response?.data || error.message);
+            message.error(error.response?.data?.message || 'Lỗi khi xử lý bài viết');
         }
     };
 
-    // Xem chi tiết bài viết
     const handleViewDetails = (post) => {
         setSelectedPost(post);
         setIsModalVisible(true);
     };
 
-    // Đóng modal
     const handleModalClose = () => {
         setIsModalVisible(false);
         setSelectedPost(null);
     };
 
-    // Cấu hình cột bảng
     const columns = [
         {
             title: 'Thumbnail',
@@ -102,15 +114,12 @@ const PostManagement = () => {
             key: 'thumbnail',
             render: (mediaFiles) => {
                 const media = mediaFiles[0];
-                if (media?.type === 'image') {
-                    return <Image src={media.url} width={50} />;
-                } else if (media?.type === 'video') {
-                    return (
-                        <video width="50" controls>
-                            <source src={media.url} type="video/mp4" />
-                        </video>
-                    );
-                }
+                if (media?.type === 'image') return <Image src={media.url} width={50} />;
+                if (media?.type === 'video') return (
+                    <video width="50" controls>
+                        <source src={media.url} type="video/mp4" />
+                    </video>
+                );
                 return 'Không có media';
             },
         },
@@ -137,11 +146,16 @@ const PostManagement = () => {
             title: 'Trạng thái',
             dataIndex: 'deleted',
             key: 'deleted',
-            render: (deleted) => (
-                <Tag color={deleted ? 'red' : 'green'}>
-                    {deleted ? 'Đã ẩn' : 'Hiển thị'}
-                </Tag>
-            ),
+            render: (deleted, record) => {
+                if (statusFilter === 'reported') {
+                    return <Tag color="orange">Đang bị báo cáo</Tag>;
+                }
+                return (
+                    <Tag color={deleted ? 'red' : 'green'}>
+                        {deleted ? 'Đã ẩn' : 'Hiển thị'}
+                    </Tag>
+                );
+            },
         },
         {
             title: 'Hành động',
@@ -189,6 +203,35 @@ const PostManagement = () => {
                     format="DD/MM/YYYY"
                     placeholder={['Từ ngày', 'Đến ngày']}
                 />
+                <div>
+                    <Button
+                        type={statusFilter === 'all' ? 'primary' : 'default'}
+                        onClick={() => setStatusFilter('all')}
+                        style={{ marginRight: 8 }}
+                    >
+                        Tất cả
+                    </Button>
+                    <Button
+                        type={statusFilter === 'active' ? 'primary' : 'default'}
+                        onClick={() => setStatusFilter('active')}
+                        style={{ marginRight: 8 }}
+                    >
+                        Đang hiển thị
+                    </Button>
+                    <Button
+                        type={statusFilter === 'deleted' ? 'primary' : 'default'}
+                        onClick={() => setStatusFilter('deleted')}
+                        style={{ marginRight: 8 }}
+                    >
+                        Đã bị xóa
+                    </Button>
+                    <Button
+                        type={statusFilter === 'reported' ? 'primary' : 'default'}
+                        onClick={() => setStatusFilter('reported')}
+                    >
+                        Đang bị báo cáo
+                    </Button>
+                </div>
             </div>
             <Table
                 columns={columns}
@@ -215,6 +258,8 @@ const PostManagement = () => {
                         <p><strong>Tiêu đề:</strong> {selectedPost.caption}</p>
                         <p><strong>Tác giả:</strong> {selectedPost.author.username}</p>
                         <p><strong>Ngày tạo:</strong> {moment(selectedPost.createdAt).format('DD/MM/YYYY HH:mm')}</p>
+                        <p><strong>Số lượt thích:</strong> {selectedPost.likes.length}</p>
+                        <p><strong>Số bình luận:</strong> {selectedPost.comments.length}</p>
                         <p><strong>Media:</strong></p>
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px' }}>
                             {selectedPost.mediaFiles.map((media, index) => (
@@ -222,23 +267,13 @@ const PostManagement = () => {
                                     {media.type === 'image' ? (
                                         <Image src={media.url} width={200} />
                                     ) : (
-                                        <video width="200" controls>
+                                        <video width={200} controls>
                                             <source src={media.url} type="video/mp4" />
                                         </video>
                                     )}
                                 </div>
                             ))}
                         </div>
-                        <p><strong>Bình luận ({selectedPost.comments.length}):</strong></p>
-                        <ul>
-                            {selectedPost.comments.length > 0 ? (
-                                selectedPost.comments.map((commentId) => (
-                                    <li key={commentId}>Comment ID: {commentId}</li>
-                                ))
-                            ) : (
-                                <li>Không có bình luận</li>
-                            )}
-                        </ul>
                     </div>
                 )}
             </Modal>

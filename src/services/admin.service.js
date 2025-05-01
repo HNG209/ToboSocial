@@ -40,13 +40,19 @@ export const deleteMultipleUsersAPI = (userIds) => {
 };
 
 // === POSTS ===
-export const fetchAdminPostsAPI = (params = {}) => {
+export const fetchAdminPostsAPI = (params) => {
+    console.log('Sending API params:', params);
     return axios.get('/v1/api/admin/posts', { params });
 };
 
 export const deletePostByAdminAPI = (postId) => {
     console.log(`Calling deletePostByAdminAPI for post: ${postId}`);
     return axios.delete(`/v1/api/admin/posts/${postId}`);
+};
+
+export const restorePostByAdminAPI = (postId) => {
+    console.log(`Calling restorePostByAdminAPI for post: ${postId}`);
+    return axios.patch(`/v1/api/admin/posts/${postId}/restore`);
 };
 
 // === COMMENTS ===
