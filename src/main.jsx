@@ -25,6 +25,9 @@ import Profilex from "./pages/client/Profiles";
 import AdminLayout from "./pages/admin/AdminLayout";
 import Dashboard from "./pages/admin/Dashboard";
 import UserManagement from "./pages/admin/UserManagement";
+import PostManagement from "./pages/admin/PostManagement";
+import CommentManagement from "./pages/admin/CommentManagement";
+import ReportManagement from "./pages/admin/ReportManagement";
 
 
 
@@ -117,15 +120,15 @@ const router = createBrowserRouter([
       },
       {
         path: "posts",
-        element: <div>AdminPosts </div>,
+        element: <PostManagement />,
       },
       {
         path: "reports",
-        element: <div>AdminReports</div>,
+        element: <ReportManagement />,
       },
       {
         path: "comments",
-        element: <div>AdminComments </div>,
+        element: <CommentManagement />,
       }
     ]
   }
