@@ -1,8 +1,8 @@
 import axios from "./axios.customize";
 
 // === DASHBOARD ===
-export const fetchDashboardStatsAPI = () => {
-    return axios.get('/v1/api/admin/dashboard');
+export const fetchDashboardStatsAPI = (timeFilter = 'all') => {
+    return axios.get('/v1/api/admin/dashboard', { params: { timeFilter } });
 };
 
 // === USERS ===
