@@ -87,7 +87,6 @@ const profileSlice = createSlice({
             })
             .addCase(updateUser.fulfilled, (state, action) => {
                 state.status = 'succeeded'; // Đặt trạng thái thành succeeded
-                console.log('Update user:', action.payload);
                 // state.user = action.payload; // Cập nhật thông tin người dùng từ API
             })
             .addCase(updateUser.rejected, (state, action) => {

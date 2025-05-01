@@ -109,7 +109,7 @@ export default function ProfileEditPage() {
                     </div>
                     <div className="mb-4">
                         <label htmlFor="email" className="block text-sm font-medium text-gray-700">Email</label>
-                        <input value={email} type="email" id="email" className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 p-2" />
+                        <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" id="email" className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 p-2" />
                     </div>
                     <div className="mb-4">
                         <label htmlFor="bio" className="block text-sm font-medium text-gray-700">Bio</label>
