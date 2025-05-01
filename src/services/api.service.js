@@ -17,8 +17,14 @@ const unlikePostAPI = (postId, userId) => {
 }
 
 // Comment APIs
-const fetchCommentsByPostAPI = (postId, page = 1, limit = 10) => {
+const fetchCommentsByPostAPI = (postId, page = 1, limit = 10) => { //?
     const URL_BACKEND = `/v1/api/comments?post=${postId}&page=${page}&limit=${limit}`;
+    return axios.get(URL_BACKEND);
+}
+
+// Hung sua lai
+const fetchPostCommentsAPI = (postId) => {
+    const URL_BACKEND = `v1/api/posts/${postId}/comments`;
     return axios.get(URL_BACKEND);
 }
 
@@ -75,6 +81,7 @@ export {
     likePostAPI,
     unlikePostAPI,
     fetchCommentsByPostAPI,
+    fetchPostCommentsAPI,
     createCommentAPI,
     deleteCommentAPI,
     updateCommentAPI,

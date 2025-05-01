@@ -87,21 +87,12 @@ const ProfilePage = () => {
             <div>
                 {/* <h2 className="text-2xl text-center mt-4">Posts</h2> */}
                 <div className="grid grid-cols-3 gap-4 p-4">
-                    {/* Map through posts and display them here */}
-                    {/* <PostThumb post={{}} />
-                    <PostThumb post={{}} />
-                    <PostThumb post={{}} />
-                    <PostThumb post={{}} />
-                    <PostThumb post={{}} />
-                    <PostThumb post={{}} />
-                    <PostThumb post={{}} />
-                    <PostThumb post={{}} /> */}
                     {
                         posts.map((post, index) => (
-                            console.log(post),
                             <PostThumb key={index} post={post} />
                         ))
                     }
+                    {/* <PostThumb></PostThumb> */}
                 </div>
             </div>
         </>
