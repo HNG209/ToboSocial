@@ -70,7 +70,27 @@ export const fetchReportsAPI = (params = {}) => {
     return axios.get('/v1/api/admin/reports', { params });
 };
 
+export const getPostReportCountAPI = (postId) => {
+    return axios.get(`/v1/api/admin/reports/post/${postId}/count`);
+};
+
 export const markReportReviewedAPI = (reportId) => {
     console.log(`Calling markReportReviewedAPI for report: ${reportId}`);
     return axios.patch(`/v1/api/admin/reports/${reportId}/reviewed`);
+};
+
+export const warnUserAPI = (userId, message, relatedPostId = null) => {
+    return axios.post(`/v1/api/users/${userId}/warn`, { message, relatedPostId });
+};
+
+export const getUserNotificationsAPI = (params = {}) => {
+    return axios.get('/v1/api/notifications', { params });
+};
+
+export const markNotificationAsReadAPI = (notificationId) => {
+    return axios.patch(`/v1/api/notifications/${notificationId}/read`);
+};
+
+export const markAllNotificationsAsReadAPI = () => {
+    return axios.patch('/v1/api/notifications/read-all');
 };

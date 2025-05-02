@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Table, Input, Button, Modal, Image, Popconfirm, Tag, message, DatePicker } from 'antd';
-import { SearchOutlined, EyeOutlined, DeleteOutlined } from '@ant-design/icons';
+import { SearchOutlined, EyeOutlined, DeleteOutlined, LinkOutlined } from '@ant-design/icons'; // Thêm LinkOutlined
 import { fetchAdminPostsAPI, deletePostByAdminAPI, restorePostByAdminAPI } from '../../services/admin.service';
 import moment from 'moment';
 
@@ -36,7 +36,7 @@ const PostManagement = () => {
                             : statusFilter === 'active'
                                 ? 'false'
                                 : 'true',
-                    reported: statusFilter === 'reported' ? 'true' : undefined, // Thêm reported
+                    reported: statusFilter === 'reported' ? 'true' : undefined,
                 },
                 ...params,
             };
@@ -84,10 +84,10 @@ const PostManagement = () => {
 
             if (post.deleted) {
                 await restorePostByAdminAPI(postId);
-                message.success('Khôi phục bài viết thành công');
+                message.success('Khôi phục bài viết thành công và xử lý các báo cáo liên quan');
             } else {
                 await deletePostByAdminAPI(postId);
-                message.success('Xóa bài viết thành công');
+                message.success('Đã xóa bài viết và xử lý các báo cáo liên quan');
             }
 
             fetchPosts();
@@ -105,6 +105,13 @@ const PostManagement = () => {
     const handleModalClose = () => {
         setIsModalVisible(false);
         setSelectedPost(null);
+    };
+
+    const handleOpenPost = () => {
+        if (selectedPost) {
+            const postUrl = `/posts/${selectedPost._id}`;
+            window.open(postUrl, '_blank'); // Mở tab mới
+        }
     };
 
     const columns = [
@@ -250,7 +257,20 @@ const PostManagement = () => {
                 title="Chi tiết bài viết"
                 visible={isModalVisible}
                 onCancel={handleModalClose}
-                footer={null}
+                footer={[
+                    <Button key="close" onClick={handleModalClose}>
+                        Đóng
+                    </Button>,
+                    <Button
+                        key="open"
+                        type="primary"
+                        icon={<LinkOutlined />}
+                        onClick={handleOpenPost}
+                        disabled={!selectedPost}
+                    >
+                        Xem bài viết
+                    </Button>,
+                ]}
                 width={800}
             >
                 {selectedPost && (

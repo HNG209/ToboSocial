@@ -1,8 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { Table, Select, Button, Modal, Image, Popconfirm, Tag, message, Input } from 'antd';
+import { Table, Select, Button, Modal, Image, Popconfirm, Tag, message, Input, Avatar, Form, Input as AntdInput } from 'antd';
 import { EyeOutlined, DeleteOutlined, LockOutlined, WarningOutlined, SearchOutlined } from '@ant-design/icons';
-import { fetchReportsAPI, markReportReviewedAPI, deletePostByAdminAPI, banUserAPI, fetchAdminPostsAPI } from '../../services/admin.service';
+import { fetchReportsAPI, markReportReviewedAPI, deletePostByAdminAPI, banUserAPI, fetchAdminPostsAPI, getPostReportCountAPI, warnUserAPI } from '../../services/admin.service';
 import moment from 'moment';
+import Slider from 'react-slick';
+
+import 'slick-carousel/slick/slick.css';
+import 'slick-carousel/slick/slick-theme.css';
 
 const { Option } = Select;
 const { Search } = Input;
@@ -11,27 +15,28 @@ const ReportManagement = () => {
     const [reports, setReports] = useState([]);
     const [total, setTotal] = useState(0);
     const [loading, setLoading] = useState(false);
-    const [statusFilter, setStatusFilter] = useState('all'); // all, pending, reviewed
+    const [statusFilter, setStatusFilter] = useState('all');
     const [searchText, setSearchText] = useState('');
     const [pagination, setPagination] = useState({ current: 1, pageSize: 10 });
     const [selectedReport, setSelectedReport] = useState(null);
     const [postDetails, setPostDetails] = useState(null);
     const [isModalVisible, setIsModalVisible] = useState(false);
+    const [reportCount, setReportCount] = useState(0);
+    const [isWarnModalVisible, setIsWarnModalVisible] = useState(false);
+    const [warnForm] = Form.useForm();
 
-    // Gọi API để lấy danh sách báo cáo
     const fetchReports = async (params = {}) => {
         try {
             setLoading(true);
             const response = await fetchReportsAPI({
                 limit: pagination.pageSize,
                 skip: (pagination.current - 1) * pagination.pageSize,
-                'filter[status]': statusFilter !== 'all' ? statusFilter : undefined,
-                'filter[reporter][username]': searchText || undefined,
-                ...params,
+                filter: {
+                    status: statusFilter !== 'all' ? statusFilter : undefined,
+                    reporter: { username: searchText || undefined },
+                },
             });
-            const reportsData = Array.isArray(response)
-                ? response
-                : response.reports || [];
+            const reportsData = Array.isArray(response.reports) ? response.reports : response.reports || [];
             setReports(reportsData);
             setTotal(response.total || reportsData.length);
         } catch (error) {
@@ -46,32 +51,30 @@ const ReportManagement = () => {
         fetchReports();
     }, [pagination.current, pagination.pageSize, statusFilter, searchText]);
 
-    // Xử lý thay đổi trạng thái lọc
     const handleStatusFilter = (value) => {
         setStatusFilter(value);
         setPagination({ ...pagination, current: 1 });
     };
 
-    // Xử lý tìm kiếm
     const handleSearch = (value) => {
         setSearchText(value);
         setPagination({ ...pagination, current: 1 });
     };
 
-    // Xử lý thay đổi phân trang
     const handleTableChange = (newPagination) => {
         setPagination(newPagination);
     };
 
-    // Xem chi tiết báo cáo và lấy thông tin bài viết
     const handleViewDetails = async (report) => {
         setSelectedReport(report);
         try {
-            const response = await fetchAdminPostsAPI({ 'filter[_id]': report.post._id });
-            const postData = Array.isArray(response)
-                ? response[0]
-                : response.posts?.[0] || null;
+            const [postResponse, countResponse] = await Promise.all([
+                fetchAdminPostsAPI({ 'filter[_id]': report.post._id }),
+                getPostReportCountAPI(report.post._id)
+            ]);
+            const postData = Array.isArray(postResponse.posts) ? postResponse.posts[0] : postResponse.posts?.[0] || null;
             setPostDetails(postData);
+            setReportCount(countResponse.reportCount || 0);
         } catch (error) {
             console.error('Error fetching post details:', error);
             message.error('Lỗi khi tải chi tiết bài viết');
@@ -79,14 +82,13 @@ const ReportManagement = () => {
         setIsModalVisible(true);
     };
 
-    // Đóng modal
     const handleModalClose = () => {
         setIsModalVisible(false);
         setSelectedReport(null);
         setPostDetails(null);
+        setReportCount(0);
     };
 
-    // Đánh dấu báo cáo là reviewed
     const handleReviewReport = async (reportId) => {
         try {
             await markReportReviewedAPI(reportId);
@@ -105,7 +107,6 @@ const ReportManagement = () => {
         }
     };
 
-    // Xóa bài viết
     const handleDeletePost = async (postId) => {
         try {
             await deletePostByAdminAPI(postId);
@@ -117,7 +118,6 @@ const ReportManagement = () => {
         }
     };
 
-    // Khóa user
     const handleBanUser = async (userId) => {
         try {
             await banUserAPI(userId);
@@ -128,36 +128,61 @@ const ReportManagement = () => {
         }
     };
 
-    // Cảnh báo user (giả định API)
-    const handleWarnUser = async (userId, warningMessage) => {
+    const handleOpenWarnModal = () => {
+        setIsWarnModalVisible(true);
+    };
+
+    const handleWarnUser = async (values) => {
         try {
-            // Giả định API warnUserAPI
-            await axios.post(`/v1/api/admin/users/${userId}/warn`, { message: warningMessage });
+            const { message: warningMessage } = values;
+            await warnUserAPI(postDetails.author._id, warningMessage, selectedReport.post._id);
             message.success('Gửi cảnh báo thành công');
+            setIsWarnModalVisible(false);
+            warnForm.resetFields();
         } catch (error) {
             console.error('Error warning user:', error);
             message.error('Lỗi khi gửi cảnh báo');
         }
     };
 
-    // Cấu hình cột bảng
     const columns = [
         {
             title: 'Người báo cáo',
             dataIndex: ['reporter', 'username'],
             key: 'reporter',
             sorter: (a, b) => a.reporter.username.localeCompare(b.reporter.username),
+            render: (text, record) => (
+                <div style={{ display: 'flex', alignItems: 'center' }}>
+                    <Avatar src={record.reporter.profile?.avatar} size={24} style={{ marginRight: 8 }} />
+                    {text}
+                </div>
+            ),
         },
         {
-            title: 'Bài viết',
+            title: 'Bài viết bị báo cáo',
             dataIndex: ['post', 'caption'],
             key: 'post',
             ellipsis: true,
+            render: (text, record) => (
+                <div style={{ display: 'flex', alignItems: 'center' }}>
+                    {record.post.mediaFiles?.[0]?.type === 'image' && (
+                        <Image src={record.post.mediaFiles[0].url} width={40} height={40} style={{ marginRight: 8, objectFit: 'cover' }} preview={false} />
+                    )}
+                    {text || 'Không có caption'}
+                </div>
+            ),
         },
         {
             title: 'Lý do',
             dataIndex: 'reason',
             key: 'reason',
+        },
+        {
+            title: 'Ngày báo cáo',
+            dataIndex: 'createdAt',
+            key: 'createdAt',
+            render: (createdAt) => moment(createdAt).format('DD/MM/YYYY HH:mm'),
+            sorter: (a, b) => new Date(a.createdAt) - new Date(b.createdAt),
         },
         {
             title: 'Trạng thái',
@@ -170,25 +195,34 @@ const ReportManagement = () => {
             ),
         },
         {
-            title: 'Thời gian',
-            dataIndex: 'createdAt',
-            key: 'createdAt',
-            render: (createdAt) => moment(createdAt).format('DD/MM/YYYY HH:mm'),
-            sorter: (a, b) => new Date(a.createdAt) - new Date(b.createdAt),
-        },
-        {
             title: 'Hành động',
             key: 'action',
             render: (_, record) => (
-                <Button
-                    icon={<EyeOutlined />}
-                    onClick={() => handleViewDetails(record)}
-                >
-                    Chi tiết
-                </Button>
+                <div style={{ display: 'flex', gap: 8 }}>
+                    <Button
+                        icon={<EyeOutlined />}
+                        onClick={() => handleViewDetails(record)}
+                    >
+                        Chi tiết
+                    </Button>
+                    <Button
+                        type="link"
+                        onClick={() => window.open(`/posts/${record.post._id}`, '_blank')}
+                    >
+                        Xem bài viết
+                    </Button>
+                </div>
             ),
         },
     ];
+
+    const sliderSettings = {
+        dots: true,
+        infinite: true,
+        speed: 500,
+        slidesToShow: 1,
+        slidesToScroll: 1,
+    };
 
     return (
         <div style={{ padding: '20px' }}>
@@ -234,29 +268,47 @@ const ReportManagement = () => {
             >
                 {selectedReport && (
                     <div>
-                        <p><strong>Người báo cáo:</strong> {selectedReport.reporter.username}</p>
-                        <p><strong>Bài viết:</strong> {selectedReport.post.caption}</p>
+                        <p>
+                            <strong>Người báo cáo:</strong>{' '}
+                            <Avatar src={selectedReport.reporter.profile?.avatar} size={24} style={{ marginRight: 8 }} />
+                            {selectedReport.reporter.username}
+                        </p>
                         <p><strong>Lý do:</strong> {selectedReport.reason}</p>
-                        <p><strong>Mô tả:</strong> {selectedReport.description}</p>
-                        <p><strong>Thời gian:</strong> {moment(selectedReport.createdAt).format('DD/MM/YYYY HH:mm')}</p>
-                        <p><strong>Trạng thái:</strong> {selectedReport.status === 'pending' ? 'Chờ xử lý' : 'Đã xử lý'}</p>
+                        <p><strong>Mô tả:</strong> {selectedReport.description || 'Không có mô tả'}</p>
+                        <p><strong>Ngày báo cáo:</strong> {moment(selectedReport.createdAt).format('DD/MM/YYYY HH:mm')}</p>
+                        <p><strong>Trạng thái:</strong>{' '}
+                            <Tag color={selectedReport.status === 'pending' ? 'orange' : 'green'}>
+                                {selectedReport.status === 'pending' ? 'Chờ xử lý' : 'Đã xử lý'}
+                            </Tag>
+                        </p>
                         {postDetails && (
                             <>
-                                <p><strong>Chi tiết bài viết:</strong></p>
+                                <p><strong>Bài viết bị báo cáo:</strong></p>
                                 <p><strong>Tác giả:</strong> {postDetails.author.username}</p>
-                                <div style={{ marginBottom: 16 }}>
-                                    {postDetails.mediaFiles?.map((media, index) => (
-                                        <div key={index} style={{ display: 'inline-block', marginRight: 16 }}>
-                                            {media.type === 'image' ? (
-                                                <Image src={media.url} width={150} />
-                                            ) : (
-                                                <video width="150" controls>
-                                                    <source src={media.url} type="video/mp4" />
-                                                </video>
-                                            )}
-                                        </div>
-                                    ))}
-                                </div>
+                                <p><strong>Caption:</strong> {postDetails.caption || 'Không có caption'}</p>
+                                <p><strong>Tổng số báo cáo:</strong> {reportCount}</p>
+                                <Button
+                                    type="link"
+                                    onClick={() => window.open(`/posts/${selectedReport.post._id}`, '_blank')}
+                                    style={{ padding: 0, marginBottom: 16 }}
+                                >
+                                    Xem bài viết trong tab mới
+                                </Button>
+                                {postDetails.mediaFiles?.length > 0 && (
+                                    <Slider {...sliderSettings}>
+                                        {postDetails.mediaFiles.map((media, index) => (
+                                            <div key={index}>
+                                                {media.type === 'image' ? (
+                                                    <Image src={media.url} width={300} style={{ margin: '0 auto' }} />
+                                                ) : (
+                                                    <video width="300" controls style={{ margin: '0 auto', display: 'block' }}>
+                                                        <source src={media.url} type="video/mp4" />
+                                                    </video>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </Slider>
+                                )}
                             </>
                         )}
                         <div style={{ marginTop: 16 }}>
@@ -283,16 +335,13 @@ const ReportManagement = () => {
                             )}
                             {postDetails?.author?._id && (
                                 <>
-                                    <Popconfirm
-                                        title="Bạn có chắc muốn gửi cảnh báo cho user này?"
-                                        onConfirm={() => handleWarnUser(postDetails.author._id, 'Nội dung không phù hợp')}
-                                        okText="Có"
-                                        cancelText="Không"
+                                    <Button
+                                        icon={<WarningOutlined />}
+                                        onClick={handleOpenWarnModal}
+                                        style={{ marginRight: 8 }}
                                     >
-                                        <Button icon={<WarningOutlined />} style={{ marginRight: 8 }}>
-                                            Gửi cảnh báo
-                                        </Button>
-                                    </Popconfirm>
+                                        Gửi cảnh báo
+                                    </Button>
                                     <Popconfirm
                                         title="Bạn có chắc muốn khóa user này?"
                                         onConfirm={() => handleBanUser(postDetails.author._id)}
@@ -308,6 +357,34 @@ const ReportManagement = () => {
                         </div>
                     </div>
                 )}
+            </Modal>
+            <Modal
+                title="Gửi cảnh báo"
+                open={isWarnModalVisible}
+                onCancel={() => setIsWarnModalVisible(false)}
+                footer={null}
+            >
+                <Form
+                    form={warnForm}
+                    onFinish={handleWarnUser}
+                    layout="vertical"
+                >
+                    <Form.Item
+                        name="message"
+                        label="Nội dung cảnh báo"
+                        rules={[{ required: true, message: 'Vui lòng nhập nội dung cảnh báo!' }]}
+                    >
+                        <AntdInput.TextArea rows={4} placeholder="Nhập nội dung cảnh báo..." />
+                    </Form.Item>
+                    <Form.Item>
+                        <Button type="primary" htmlType="submit">
+                            Gửi
+                        </Button>
+                        <Button onClick={() => setIsWarnModalVisible(false)} style={{ marginLeft: 8 }}>
+                            Hủy
+                        </Button>
+                    </Form.Item>
+                </Form>
             </Modal>
         </div>
     );

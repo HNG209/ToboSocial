@@ -28,6 +28,7 @@ import UserManagement from "./pages/admin/UserManagement";
 import PostManagement from "./pages/admin/PostManagement";
 import CommentManagement from "./pages/admin/CommentManagement";
 import ReportManagement from "./pages/admin/ReportManagement";
+import NotificationPage from "./pages/client/NotificationPage";
 
 
 
@@ -49,6 +50,10 @@ const router = createBrowserRouter([
       {
         path: "/reels",
         element: <ReelsPage />,
+      },
+      {
+        path: "/notifications",
+        element: <NotificationPage />,
       },
       {
         path: "/messages",
