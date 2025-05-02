@@ -52,6 +52,11 @@ const fetchPostDetailAPI = (postId) => {
     return axios.get(URL_BACKEND);
 }
 
+const fetchPostByUserAPI = (userId, page = 1, limit = 10) => {
+    const URL_BACKEND = `/v1/api//users/${userId}/posts?page=${page}&limit=${limit}`;
+    console.log(URL_BACKEND);
+    return axios.get(URL_BACKEND);
+}
 
 export {
     fetchPostsAPI,
@@ -63,5 +68,6 @@ export {
     updateCommentAPI,
     likeCommentAPI,
     unlikeCommentAPI,
-    fetchPostDetailAPI
+    fetchPostDetailAPI,
+    fetchPostByUserAPI
 };
