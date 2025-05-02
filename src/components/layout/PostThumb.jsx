@@ -48,8 +48,6 @@ export default function PostThumb({ post }) {
                 <div
                     onClick={() => {
                         dispatch(fetchPostComments(post._id))
-                        dispatch(fetchPosts())
-                        dispatch(fetchComments(post._id))
                         setIsModalOpen(true)
                     }}
                     className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col items-center justify-center gap-2 cursor-pointer"

@@ -6,6 +6,8 @@ import 'slick-carousel/slick/slick.css';
 import 'slick-carousel/slick/slick-theme.css';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchComments } from '../../redux/post/postsSlice';
+import { createComment } from '../../redux/comments/commentsSlice';
+import { getCurrentUser } from '../../redux/profile/profileSlice';
 
 const NextArrow = ({ onClick }) => (
     <div className="absolute right-3 top-1/2 transform -translate-y-1/2 z-10 cursor-pointer text-white bg-black/50 p-1 rounded-full" onClick={onClick}>
@@ -29,8 +31,7 @@ const PostDetail = ({ post, open, onClose }) => {
     const status = useSelector((state) => state.profile.status);
 
     const postComments = useSelector((state) => state.comments.comments)
-
-    console.log('cmt ne', postComments)
+    const newComments = useSelector((state) => state.comments.newComments)
 
     useEffect(() => {
         if (status === 'idle') {
@@ -40,18 +41,34 @@ const PostDetail = ({ post, open, onClose }) => {
     }, [dispatch, status]);
 
     useEffect(() => {
+        if (newComments) {
+            setComments(prev => [...prev, newComments]);
+        }
+    }, [newComments]);
+
+
+    useEffect(() => {
+        setComments(postComments)
+    }, [postComments])
+
+    useEffect(() => {
         if (post) {
             setComments(post.comments || []);
         }
     }, [post]);
 
     const handleCommentChange = (e) => setComment(e.target.value);
-    const handleCommentPost = () => {
-        if (comment.trim()) {
-            setComments([...comments, { user: 'you', text: comment }]);
-            setComment('');
-        }
+
+    const handleCommentPost = async () => {
+        await dispatch(createComment(
+            {
+                postId: post._id,
+                userId: userData._id,
+                text: comment
+            }))
+        setComment('')
     };
+
     const toggleMute = () => setMuted(!muted);
 
     const sliderSettings = {
@@ -71,14 +88,14 @@ const PostDetail = ({ post, open, onClose }) => {
         >
             {media.type === 'image' ? (
                 <img
-                    src={media.src}
+                    src={media.url}
                     alt="Post media"
                     className="max-h-full max-w-full object-contain"
                 />
             ) : (
                 <div className="relative flex items-center justify-center w-full h-full">
                     <video
-                        src={media.src}
+                        src={media.url}
                         className="max-h-full max-w-full object-contain"
                         controls
                         muted={muted}
@@ -131,9 +148,8 @@ const PostDetail = ({ post, open, onClose }) => {
                         </Avatar>
                         <span className='ml-2 font-semibold'>{'@' + userData?.username}</span>
                         <span className='ml-1'>{post.caption}</span>
-                        {postComments.map((c) => (
-                            console.log(c),
-                            <div className='mb-2 mt-2 ml-2'>
+                        {comments.map((c) => (
+                            <div className='mb-4 mt-2 ml-2'>
                                 <Avatar size={30} className="absolute top-0 left-0 z-10 m-4" src={c?.user?.profile?.avatar || 'https://res.cloudinary.com/dwaldcj4v/image/upload/v1745215451/sodmg5jwxc8m2pho0i8r.jpg'}>
                                     <img src="https://i.pravatar.cc/150?u=user" alt="user" className="w-full object-cover max-h-[600px]" />
                                 </Avatar>

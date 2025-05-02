@@ -1,5 +1,5 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
-import { fetchPostCommentsAPI } from "../../services/api.service";
+import { createCommentAPI, fetchPostCommentsAPI } from "../../services/api.service";
 
 export const fetchPostComments = createAsyncThunk('posts/fetchPostComments', async (postId, { rejectWithValue }) => {
     try {
@@ -11,12 +11,23 @@ export const fetchPostComments = createAsyncThunk('posts/fetchPostComments', asy
     }
 });
 
+export const createComment = createAsyncThunk('posts/createComment', async ({ postId, userId, text }, { rejectWithValue }) => {
+    try {
+        const response = await createCommentAPI(postId, userId, text);
+        return response; //payload
+    } catch (error) {
+        console.error('Error in createComment:', error.message);
+        return rejectWithValue(error.message);
+    }
+});
+
 //store the comments context of current selected post
 const commentsSlice = createSlice({
     name: 'comments',
     initialState: {
         postId: null,
         comments: [],
+        newComments: null,
         status: 'loading',
         error: null
     },
@@ -32,6 +43,20 @@ const commentsSlice = createSlice({
                 state.comments = action.payload.comments;
             })
             .addCase(fetchPostComments.rejected, (state, action) => {
+                state.status = 'failed';
+                state.error = action.payload;
+            })
+
+            //Create comment
+            .addCase(createComment.pending, (state) => {
+                state.status = 'loading';
+            })
+            .addCase(createComment.fulfilled, (state, action) => {
+                state.status = 'succeeded';
+                console.log('create comment:', action.payload);
+                state.newComments = action.payload;
+            })
+            .addCase(createComment.rejected, (state, action) => {
                 state.status = 'failed';
                 state.error = action.payload;
             })
