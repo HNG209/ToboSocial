@@ -22,6 +22,13 @@ import { store } from "./redux/store";
 import PostDetailPage from "./pages/client/PostDetailPage";
 import SearchPage from "./components/home/SearchBar";
 import Profilex from "./pages/client/Profiles";
+import AdminLayout from "./pages/admin/AdminLayout";
+import Dashboard from "./pages/admin/Dashboard";
+import UserManagement from "./pages/admin/UserManagement";
+import PostManagement from "./pages/admin/PostManagement";
+import CommentManagement from "./pages/admin/CommentManagement";
+import ReportManagement from "./pages/admin/ReportManagement";
+import NotificationPage from "./pages/client/NotificationPage";
 
 
 
@@ -43,6 +50,10 @@ const router = createBrowserRouter([
       {
         path: "/reels",
         element: <ReelsPage />,
+      },
+      {
+        path: "/notifications",
+        element: <NotificationPage />,
       },
       {
         path: "/messages",
@@ -99,7 +110,34 @@ const router = createBrowserRouter([
   {
     path: "/forgetpassword",
     element: (<ForgetPasswordPage />)
+  },
+  {
+    path: "/admin",
+    element: <AdminLayout />,
+    children: [
+      {
+        index: true,
+        element: <Dashboard />,
+      },
+      {
+        path: "users",
+        element: <UserManagement />,
+      },
+      {
+        path: "posts",
+        element: <PostManagement />,
+      },
+      {
+        path: "reports",
+        element: <ReportManagement />,
+      },
+      {
+        path: "comments",
+        element: <CommentManagement />,
+      }
+    ]
   }
+
 ]);
 
 ReactDOM.createRoot(document.getElementById("root")).render(
