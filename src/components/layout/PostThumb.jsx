@@ -8,31 +8,11 @@ import { useDispatch } from 'react-redux';
 import { fetchComments, fetchPosts } from '../../redux/post/postsSlice';
 import { fetchPostComments } from '../../redux/comments/commentsSlice';
 import { fetchPostCommentsAPI } from '../../services/api.service';
+import { fetchPostDetailById } from '../../redux/post/selectedPostSlice';
 
 export default function PostThumb({ post }) {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const dispatch = useDispatch();
-
-    const samplePost = {
-        user: 'hung_user',
-        media: [
-            {
-                type: 'image',
-                src: 'https://picsum.photos/id/1015/800/600',
-            },
-            {
-                type: 'video',
-                src: 'https://res.cloudinary.com/demo/video/upload/dog.mp4',
-            },
-        ],
-        likes: ['alice', 'bob'],
-        comments: [
-            { user: 'alice', text: 'Great picture!' },
-            { user: 'bob', text: 'Amazing vibes' },
-            { user: 'Hung29', text: 'Godly' }
-        ],
-    };
-
 
     return (
         <>
@@ -47,6 +27,7 @@ export default function PostThumb({ post }) {
                 {/* Hover overlay */}
                 <div
                     onClick={() => {
+                        dispatch(fetchPostDetailById(post._id))
                         dispatch(fetchPostComments(post._id))
                         setIsModalOpen(true)
                     }}

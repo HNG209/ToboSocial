@@ -28,6 +28,11 @@ const fetchPostCommentsAPI = (postId) => {
     return axios.get(URL_BACKEND);
 }
 
+const fetchPostAuthorAPI = (postId) => {
+    const URL_BACKEND = `v1/api/${postId}/author`;
+    return axios.get(URL_BACKEND);
+}
+
 const createCommentAPI = (postId, userId, text) => {
     const URL_BACKEND = `/v1/api/comments`;
     return axios.post(URL_BACKEND, { post: postId, user: userId, text });
@@ -76,6 +81,32 @@ const updateUserAPI = (data) => {
     return axios.put(URL_BACKEND, data);
 }
 
+//like API v2
+const likePostAPIv2 = (postId, userId) => {
+    const URL_BACKEND = `/v1/api/like/${postId}`;
+    return axios.post(URL_BACKEND, { userId })
+}
+
+const unlikePostAPIv2 = (postId, userId) => {
+    const URL_BACKEND = `/v1/api/unlike/${postId}`;
+    return axios.post(URL_BACKEND, { userId })
+}
+
+const likeStatusAPIv2 = (postId, userId) => {
+    const URL_BACKEND = `/v1/api/${postId}/status`;
+    return axios.post(URL_BACKEND, { userId })
+}
+
+const fetchPostLikersv2 = (postId) => {
+    const URL_BACKEND = `/v1/api/${postId}/users`;
+    return axios.get(URL_BACKEND)
+}
+
+const countPostLikeAPIv2 = (postId) => {
+    const URL_BACKEND = `/v1/api/${postId}/count`;
+    return axios.get(URL_BACKEND)
+}
+
 export {
     fetchPostsAPI,
     likePostAPI,
@@ -91,4 +122,10 @@ export {
     fetchPostByUserAPI,
     getUserAPI,
     updateUserAPI,
+    likePostAPIv2,
+    unlikePostAPIv2,
+    likeStatusAPIv2,
+    countPostLikeAPIv2,
+    fetchPostAuthorAPI,
+    fetchPostLikersv2
 };
