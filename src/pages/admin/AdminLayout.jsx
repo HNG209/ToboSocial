@@ -12,7 +12,7 @@ const AdminLayout = () => {
                     <NavLink to="/admin/users" className="hover:text-blue-400">Users</NavLink>
                     <NavLink to="/admin/posts" className="hover:text-blue-400">Posts</NavLink>
                     <NavLink to="/admin/reports" className="hover:text-blue-400">Reports</NavLink>
-                    <NavLink to="/admin/comments" className="hover:text-blue-400">Comments</NavLink>
+                    <NavLink to="/admin/account" className="hover:text-blue-400">Account</NavLink>
                 </nav>
             </div>
 

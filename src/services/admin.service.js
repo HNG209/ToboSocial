@@ -94,3 +94,21 @@ export const markNotificationAsReadAPI = (notificationId) => {
 export const markAllNotificationsAsReadAPI = () => {
     return axios.patch('/v1/api/notifications/read-all');
 };
+
+// APIs cho Account Page
+export const getCurrentUserAPI = async () => {
+    const user = JSON.parse(localStorage.getItem('user'));
+    const userId = user?._id;
+    if (!userId) throw new Error('Missing user ID');
+
+    return axios.get(`/v1/api/admin/account?userId=${userId}`);
+};
+
+export const updateUserProfileAPI = async (data) => {
+    return axios.put('/v1/api/admin/account/profile', data);
+};
+
+export const updateUserPasswordAPI = async (data) => {
+    return axios.put('/v1/api/admin/account/password', data);
+};
+
