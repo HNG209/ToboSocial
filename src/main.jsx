@@ -26,9 +26,10 @@ import AdminLayout from "./pages/admin/AdminLayout";
 import Dashboard from "./pages/admin/Dashboard";
 import UserManagement from "./pages/admin/UserManagement";
 import PostManagement from "./pages/admin/PostManagement";
-import CommentManagement from "./pages/admin/CommentManagement";
 import ReportManagement from "./pages/admin/ReportManagement";
 import NotificationPage from "./pages/client/NotificationPage";
+import AccountPage from "./pages/admin/AccountPage";
+import { ConfigProvider, App as AntdApp } from 'antd';
 
 
 
@@ -132,18 +133,22 @@ const router = createBrowserRouter([
         element: <ReportManagement />,
       },
       {
-        path: "comments",
-        element: <CommentManagement />,
+        path: "account",
+        element: <AccountPage />,
       }
     ]
   }
 
 ]);
 
+
 ReactDOM.createRoot(document.getElementById("root")).render(
-  <Provider store={store}>
-    {/* // <AuthWrapper> */}
-    <RouterProvider router={router} />
-    {/* // </AuthWrapper> */}
-  </Provider>
+  <ConfigProvider getPopupContainer={() => document.body}>
+    <AntdApp>
+      <Provider store={store}>
+        <RouterProvider router={router} />
+      </Provider>
+    </AntdApp>
+  </ConfigProvider>
 );
+
