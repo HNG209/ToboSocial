@@ -83,16 +83,18 @@ export const warnUserAPI = (userId, message, relatedPostId = null) => {
     return axios.post(`/v1/api/users/${userId}/warn`, { message, relatedPostId });
 };
 
-export const getUserNotificationsAPI = (params = {}) => {
+export const getUserNotificationsAPI = (params) => {
     return axios.get('/v1/api/notifications', { params });
 };
 
-export const markNotificationAsReadAPI = (notificationId) => {
-    return axios.patch(`/v1/api/notifications/${notificationId}/read`);
+export const markNotificationAsReadAPI = (id) => {
+    return axios.patch(`/v1/api/notifications/${id}/read`);
 };
 
-export const markAllNotificationsAsReadAPI = () => {
-    return axios.patch('/v1/api/notifications/read-all');
+export const markAllNotificationsAsReadAPI = (userId) => {
+    return axios.patch(`/v1/api/notifications/read-all`, {
+        params: { userId }
+    });
 };
 
 // APIs cho Account Page
