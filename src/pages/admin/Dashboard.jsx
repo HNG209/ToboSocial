@@ -1,9 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import {
     Card,
-    Col,
-    Row,
-    Statistic,
     Table,
     Image,
     Button,
@@ -11,15 +8,20 @@ import {
     Select,
     Typography,
     Divider,
+    message,
+    Spin,
 } from 'antd';
 import {
     UserOutlined,
     FileTextOutlined,
     CommentOutlined,
     WarningOutlined,
-    DollarOutlined,
     ArrowUpOutlined,
     ArrowDownOutlined,
+    ReloadOutlined,
+    EyeOutlined,
+    DeleteOutlined,
+    LinkOutlined,
 } from '@ant-design/icons';
 import { Line } from 'react-chartjs-2';
 import {
@@ -38,38 +40,36 @@ ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, T
 
 const { Title: AntTitle } = Typography;
 
+// StatCard Component
 const StatCard = ({ title, value, icon, variation, loading, bgColor }) => (
-    <Card
-        loading={loading}
-        style={{ padding: 20, color: '#fff', background: bgColor, borderRadius: 16 }}
-    >
-        <Row justify="space-between" align="middle">
-            <Col>
-                <div style={{ fontSize: 14, opacity: 0.9 }}>{title}</div>
-                <div style={{ fontSize: 28, fontWeight: 600 }}>${value}</div>
+    <div className={`p-6 rounded-xl shadow-lg transform transition-all hover:-translate-y-1 hover:shadow-xl ${bgColor}`}>
+        <div className="flex justify-between items-center">
+            <div>
+                <div className="text-sm text-white/90 font-medium">{title}</div>
+                <div className="text-3xl font-bold mt-2 text-white">{loading ? <Spin /> : value.toLocaleString()}</div>
                 {variation !== undefined && (
-                    <div style={{ fontSize: 12 }}>
-                        <span style={{ color: variation >= 0 ? '#00ff00' : '#ff4d4f' }}>
-                            {variation >= 0 ? <ArrowUpOutlined /> : <ArrowDownOutlined />} {Math.abs(variation)}%
-                        </span>{' '}
-                        so với trước
+                    <div className="text-xs mt-3 flex items-center text-white/80">
+                        <span className={variation >= 0 ? 'text-green-300' : 'text-red-300'}>
+                            {variation >= 0 ? <ArrowUpOutlined /> : <ArrowDownOutlined />}
+                            {Math.abs(variation)}%
+                        </span>
+                        <span className="ml-1">so với trước</span>
                     </div>
                 )}
-            </Col>
-            <Col>{icon}</Col>
-        </Row>
-    </Card>
+            </div>
+            <div className="bg-white/20 p-4 rounded-full text-white">{icon}</div>
+        </div>
+    </div>
 );
 
-const StockListCard = ({ title, value, profit }) => (
-    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
+// TopUserCard Component
+const TopUserCard = ({ username, postCount }) => (
+    <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-all">
         <div>
-            <div style={{ fontWeight: 600 }}>{title}</div>
-            <div style={{ fontSize: 12, color: profit ? '#3f8600' : '#cf1322' }}>
-                {profit ? '10% Profit' : '10% Loss'}
-            </div>
+            <div className="font-semibold text-gray-800">{username}</div>
+            <div className="text-sm text-gray-600">{postCount} bài viết</div>
         </div>
-        <div style={{ fontWeight: 600 }}>${value}</div>
+        <span className="bg-blue-100 text-blue-600 px-3 py-1 rounded-full text-xs font-medium">Active</span>
     </div>
 );
 
@@ -82,24 +82,28 @@ const Dashboard = () => {
         variations: {},
         postStats: [],
         mostReportedPosts: [],
+        topActiveUsers: [],
     });
     const [loading, setLoading] = useState(true);
     const [timeFilter, setTimeFilter] = useState('all');
     const [visibleDrawer, setVisibleDrawer] = useState(false);
     const [selectedPost, setSelectedPost] = useState(null);
 
+    const fetchStats = async () => {
+        try {
+            setLoading(true);
+            const response = await fetchDashboardStatsAPI(timeFilter);
+            setStats(response);
+            message.success('Cập nhật dữ liệu thành công');
+        } catch (error) {
+            console.error('Error fetching dashboard stats:', error);
+            message.error('Lỗi khi tải dữ liệu');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     useEffect(() => {
-        const fetchStats = async () => {
-            try {
-                setLoading(true);
-                const response = await fetchDashboardStatsAPI(timeFilter);
-                setStats(response);
-            } catch (error) {
-                console.error('Error fetching dashboard stats:', error);
-            } finally {
-                setLoading(false);
-            }
-        };
         fetchStats();
     }, [timeFilter]);
 
@@ -109,28 +113,43 @@ const Dashboard = () => {
             {
                 label: 'Số bài viết',
                 data: stats.postStats.map((item) => item.count),
-                borderColor: '#1890ff',
-                backgroundColor: 'rgba(24, 144, 255, 0.2)',
+                borderColor: 'hsl(221.2, 83.2%, 53.3%)',
+                backgroundColor: 'rgba(59, 130, 246, 0.3)',
                 tension: 0.4,
                 fill: true,
+                pointBackgroundColor: '#fff',
+                pointBorderWidth: 2,
             },
         ],
     };
 
+    const chartOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: { position: 'top', labels: { color: '#374151' } },
+            tooltip: { backgroundColor: '#1f2937', titleColor: '#fff', bodyColor: '#fff' },
+        },
+        scales: {
+            y: { beginAtZero: true, ticks: { color: '#6b7280' } },
+            x: { ticks: { color: '#6b7280' } },
+        },
+    };
+
     const columns = [
         {
-            title: 'Thumbnail',
+            title: 'Media',
             key: 'media',
             render: (_, record) => {
                 const media = record.post.mediaFiles[0];
                 return media?.type === 'image' ? (
-                    <Image src={media.url} width={50} />
+                    <Image src={media.url || '/placeholder.svg'} width={50} height={50} className="rounded-md object-cover" />
                 ) : media?.type === 'video' ? (
-                    <video width="50" controls>
+                    <video width="50" height="50" className="rounded-md object-cover" controls>
                         <source src={media.url} type="video/mp4" />
                     </video>
                 ) : (
-                    'Không có media'
+                    <span className="text-gray-500">Không có media</span>
                 );
             },
         },
@@ -139,34 +158,46 @@ const Dashboard = () => {
             dataIndex: ['post', 'caption'],
             key: 'caption',
             ellipsis: true,
-            render: (text) => (text?.length > 50 ? `${text.slice(0, 50)}...` : text),
+            render: (text) => <div className="max-w-[250px] truncate text-gray-700">{text}</div>,
         },
         {
             title: 'Tác giả',
             dataIndex: ['post', 'author', 'username'],
             key: 'author',
+            render: (text) => <span className="font-medium text-gray-800">{text}</span>,
         },
         {
-            title: 'Số báo cáo',
+            title: 'Báo cáo',
             dataIndex: 'totalReports',
             key: 'totalReports',
-            sorter: (a, b) => a.totalReports - b.totalReports,
+            render: (text) => <span className="font-semibold text-red-600">{text}</span>,
         },
         {
             title: 'Hành động',
             key: 'action',
             render: (_, record) => (
-                <>
-                    <Button type="link" onClick={() => {
-                        setSelectedPost(record.post);
-                        setVisibleDrawer(true);
-                    }}>
-                        Xem chi tiết
+                <div className="flex space-x-3">
+                    <Button
+                        size="small"
+                        icon={<EyeOutlined />}
+                        className="text-blue-600 border-blue-600 hover:bg-blue-50"
+                        onClick={() => {
+                            setSelectedPost(record.post);
+                            setVisibleDrawer(true);
+                        }}
+                    >
+                        Chi tiết
                     </Button>
-                    <Button type="link" danger onClick={() => handleDeletePost(record.post._id)}>
+                    <Button
+                        size="small"
+                        icon={<DeleteOutlined />}
+                        danger
+                        className="text-red-600 border-red-600 hover:bg-red-50"
+                        onClick={() => handleDeletePost(record.post._id)}
+                    >
                         Xóa
                     </Button>
-                </>
+                </div>
             ),
         },
     ];
@@ -178,78 +209,175 @@ const Dashboard = () => {
                 ...prev,
                 mostReportedPosts: prev.mostReportedPosts.filter((post) => post.post._id !== postId),
             }));
+            message.success('Xóa bài viết thành công');
         } catch (error) {
             console.error('Error deleting post:', error);
+            message.error('Lỗi khi xóa bài viết');
         }
     };
 
     return (
-        <div style={{ padding: '20px' }}>
-            <AntTitle level={3}>Dashboard Tổng quan</AntTitle>
-            <Row gutter={[24, 24]}>
-                <Col xs={24} sm={12} md={6}>
-                    <StatCard title="Người dùng" value={stats.userCount} variation={stats.variations?.userVariation} loading={loading} icon={<UserOutlined style={{ fontSize: 32, color: '#fff' }} />} bgColor="linear-gradient(135deg, #108dc7 0%, #0073e6 100%)" />
-                </Col>
-                <Col xs={24} sm={12} md={6}>
-                    <StatCard title="Bài viết" value={stats.postCount} variation={stats.variations?.postVariation} loading={loading} icon={<FileTextOutlined style={{ fontSize: 32, color: '#fff' }} />} bgColor="linear-gradient(135deg, #52c234 0%, #061700 100%)" />
-                </Col>
-                <Col xs={24} sm={12} md={6}>
-                    <StatCard title="Bình luận" value={stats.commentCount} variation={stats.variations?.commentVariation} loading={loading} icon={<CommentOutlined style={{ fontSize: 32, color: '#fff' }} />} bgColor="linear-gradient(135deg, #f7971e 0%, #ffd200 100%)" />
-                </Col>
-                <Col xs={24} sm={12} md={6}>
-                    <StatCard title="Báo cáo" value={stats.pendingReports} variation={stats.variations?.reportVariation} loading={loading} icon={<WarningOutlined style={{ fontSize: 32, color: '#fff' }} />} bgColor="linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%)" />
-                </Col>
-            </Row>
+        <div className="p-6 bg-gray-100 min-h-screen">
+            <div className="flex flex-col sm:flex-row justify-between items-center mb-8">
+                <AntTitle level={2} className="text-gray-900 font-bold">Dashboard Tổng Quan</AntTitle>
+                <Button
+                    type="primary"
+                    onClick={fetchStats}
+                    loading={loading}
+                    className="mt-4 sm:mt-0 bg-indigo-600 hover:bg-indigo-700 flex items-center"
+                >
+                    <ReloadOutlined className="mr-2" />
+                    {loading ? 'Đang làm mới...' : 'Làm mới dữ liệu'}
+                </Button>
+            </div>
 
-            <Row gutter={[24, 24]} style={{ marginTop: 24 }}>
-                <Col xs={24} md={16}>
-                    <Card title="Biểu đồ đăng bài">
-                        <Select value={timeFilter} onChange={setTimeFilter} style={{ marginBottom: 16, width: 150 }}>
-                            <Select.Option value="7days">7 ngày</Select.Option>
-                            <Select.Option value="month">Tháng</Select.Option>
-                            <Select.Option value="quarter">Quý</Select.Option>
-                            <Select.Option value="all">Tất cả</Select.Option>
-                        </Select>
-                        <Line data={chartData} />
-                    </Card>
-                </Col>
-                <Col xs={24} md={8}>
-                    <Card title="Cổ phiếu phổ biến">
-                        <StockListCard title="Bajaj Finery" value={1839} profit />
-                        <StockListCard title="TTML" value={100} profit={false} />
-                        <StockListCard title="Reliance" value={200} profit />
-                        <StockListCard title="TTML" value={189} profit={false} />
-                        <StockListCard title="Stolon" value={189} profit={false} />
-                    </Card>
-                </Col>
-            </Row>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <StatCard
+                    title="Người dùng"
+                    value={stats.userCount}
+                    variation={stats.variations?.userVariation}
+                    loading={loading}
+                    icon={<UserOutlined className="text-2xl" />}
+                    bgColor="bg-gradient-to-r from-indigo-500 to-indigo-700"
+                />
+                <StatCard
+                    title="Bài viết"
+                    value={stats.postCount}
+                    variation={stats.variations?.postVariation}
+                    loading={loading}
+                    icon={<FileTextOutlined className="text-2xl" />}
+                    bgColor="bg-gradient-to-r from-green-500 to-green-700"
+                />
+                <StatCard
+                    title="Bình luận"
+                    value={stats.commentCount}
+                    variation={stats.variations?.commentVariation}
+                    loading={loading}
+                    icon={<CommentOutlined className="text-2xl" />}
+                    bgColor="bg-gradient-to-r from-yellow-500 to-yellow-700"
+                />
+                <StatCard
+                    title="Báo cáo"
+                    value={stats.pendingReports}
+                    variation={stats.variations?.reportVariation}
+                    loading={loading}
+                    icon={<WarningOutlined className="text-2xl" />}
+                    bgColor="bg-gradient-to-r from-red-500 to-red-700"
+                />
+            </div>
 
-            <Row gutter={[24, 24]} style={{ marginTop: 24 }}>
-                <Col span={24}>
-                    <Card title="Bài viết bị báo cáo nhiều nhất" loading={loading}>
-                        <Table columns={columns} dataSource={stats.mostReportedPosts} rowKey={(record) => record.post._id} pagination={{ pageSize: 5 }} />
-                    </Card>
-                </Col>
-            </Row>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+                <Card className="lg:col-span-2 p-6 bg-white rounded-xl shadow-md">
+                    <div className="flex flex-col sm:flex-row justify-between items-center mb-6">
+                        <h2 className="text-xl font-semibold text-gray-800">Hoạt động đăng bài</h2>
+                        <Select
+                            value={timeFilter}
+                            onChange={setTimeFilter}
+                            className="w-48 mt-4 sm:mt-0"
+                            options={[
+                                { value: '7days', label: '7 ngày qua' },
+                                { value: 'month', label: 'Tháng này' },
+                                { value: 'quarter', label: 'Quý này' },
+                                { value: 'all', label: 'Tất cả' },
+                            ]}
+                        />
+                    </div>
+                    <div className="h-80">
+                        {loading ? (
+                            <div className="flex justify-center items-center h-full">
+                                <Spin size="large" />
+                            </div>
+                        ) : (
+                            <Line data={chartData} options={chartOptions} />
+                        )}
+                    </div>
+                </Card>
 
-            <Drawer title="Chi tiết bài viết" open={visibleDrawer} onClose={() => setVisibleDrawer(false)} width={500}>
+                <Card className="p-6 bg-white rounded-xl shadow-md">
+                    <h2 className="text-xl font-semibold text-gray-800 mb-4">Người dùng hoạt động nhất</h2>
+                    <div className="space-y-3">
+                        {stats.topActiveUsers.length > 0 ? (
+                            stats.topActiveUsers.map((user, index) => (
+                                <TopUserCard key={index} username={user.username} postCount={user.postCount} />
+                            ))
+                        ) : (
+                            <p className="text-gray-500 text-center py-6">Chưa có dữ liệu</p>
+                        )}
+                    </div>
+                </Card>
+            </div>
+
+            <Card className="p-6 bg-white rounded-xl shadow-md">
+                <h2 className="text-xl font-semibold text-gray-800 mb-4">Bài viết bị báo cáo nhiều nhất</h2>
+                <Table
+                    columns={columns}
+                    dataSource={stats.mostReportedPosts}
+                    rowKey={(record) => record.post._id}
+                    pagination={{ pageSize: 5 }}
+                    loading={loading}
+                    className="rounded-md overflow-hidden"
+                />
+            </Card>
+
+            <Drawer
+                title={<span className="text-lg font-semibold">Chi tiết bài viết</span>}
+                open={visibleDrawer}
+                onClose={() => setVisibleDrawer(false)}
+                width={450}
+                className="rounded-lg"
+            >
                 {selectedPost && (
-                    <>
-                        <p><strong>Caption:</strong> {selectedPost.caption}</p>
-                        <p><strong>Tác giả:</strong> {selectedPost.author.username}</p>
-                        <Divider />
-                        {selectedPost.mediaFiles.map((media, index) => (
-                            media.type === 'image' ? (
-                                <Image key={index} src={media.url} width={100} style={{ marginRight: 8 }} />
-                            ) : (
-                                <video key={index} width="100" controls style={{ marginRight: 8 }}>
-                                    <source src={media.url} type="video/mp4" />
-                                </video>
-                            )
-                        ))}
-                        <Divider />
-                        <Button type="primary" href={`/posts/${selectedPost._id}`} target="_blank">Xem bài viết</Button>
-                    </>
+                    <div className="space-y-6">
+                        <div>
+                            <h3 className="text-sm font-medium text-gray-600">Caption</h3>
+                            <p className="mt-2 text-gray-800 bg-gray-50 p-3 rounded-md">{selectedPost.caption}</p>
+                        </div>
+                        <div>
+                            <h3 className="text-sm font-medium text-gray-600">Tác giả</h3>
+                            <p className="mt-2 font-medium text-gray-800">{selectedPost.author.username}</p>
+                        </div>
+                        <Divider className="my-4" />
+                        <div>
+                            <h3 className="text-sm font-medium text-gray-600 mb-3">Media</h3>
+                            <div className="grid grid-cols-2 gap-3">
+                                {selectedPost.mediaFiles.map((media, index) => (
+                                    <div key={index} className="rounded-lg overflow-hidden shadow-sm">
+                                        {media.type === 'image' ? (
+                                            <Image
+                                                src={media.url || '/placeholder.svg'}
+                                                alt={`Media ${index + 1}`}
+                                                className="w-full h-32 object-cover"
+                                            />
+                                        ) : (
+                                            <video src={media.url} controls className="w-full h-32 object-cover" />
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                        <Divider className="my-4" />
+                        <div className="flex justify-between">
+                            <Button
+                                icon={<LinkOutlined />}
+                                href={`/posts/${selectedPost._id}`}
+                                target="_blank"
+                                className="text-blue-600 border-blue-600 hover:bg-blue-50"
+                            >
+                                Xem bài viết
+                            </Button>
+                            <Button
+                                icon={<DeleteOutlined />}
+                                danger
+                                className="text-red-600 border-red-600 hover:bg-red-50"
+                                onClick={() => {
+                                    handleDeletePost(selectedPost._id);
+                                    setVisibleDrawer(false);
+                                }}
+                            >
+                                Xóa bài viết
+                            </Button>
+                        </div>
+                    </div>
                 )}
             </Drawer>
         </div>
