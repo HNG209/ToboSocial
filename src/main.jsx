@@ -30,6 +30,7 @@ import ReportManagement from "./pages/admin/ReportManagement";
 import NotificationPage from "./pages/client/NotificationPage";
 import AccountPage from "./pages/admin/AccountPage";
 import { ConfigProvider, App as AntdApp } from 'antd';
+import AdminRoute from "./pages/client/auth/AdminRoute";
 
 
 
@@ -114,7 +115,7 @@ const router = createBrowserRouter([
   },
   {
     path: "/admin",
-    element: <AdminLayout />,
+    element: <AdminRoute><AdminLayout /></AdminRoute>,
     children: [
       {
         index: true,
