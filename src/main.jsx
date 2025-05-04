@@ -22,6 +22,14 @@ import { store } from "./redux/store";
 import PostDetailPage from "./pages/client/PostDetailPage";
 import SearchPage from "./components/home/SearchBar";
 import Profilex from "./pages/client/Profiles";
+import AdminLayout from "./pages/admin/AdminLayout";
+import Dashboard from "./pages/admin/Dashboard";
+import UserManagement from "./pages/admin/UserManagement";
+import PostManagement from "./pages/admin/PostManagement";
+import ReportManagement from "./pages/admin/ReportManagement";
+import NotificationPage from "./pages/client/NotificationPage";
+import AccountPage from "./pages/admin/AccountPage";
+import { ConfigProvider, App as AntdApp } from 'antd';
 
 
 
@@ -43,6 +51,10 @@ const router = createBrowserRouter([
       {
         path: "/reels",
         element: <ReelsPage />,
+      },
+      {
+        path: "/notifications",
+        element: <NotificationPage />,
       },
       {
         path: "/messages",
@@ -99,13 +111,44 @@ const router = createBrowserRouter([
   {
     path: "/forgetpassword",
     element: (<ForgetPasswordPage />)
+  },
+  {
+    path: "/admin",
+    element: <AdminLayout />,
+    children: [
+      {
+        index: true,
+        element: <Dashboard />,
+      },
+      {
+        path: "users",
+        element: <UserManagement />,
+      },
+      {
+        path: "posts",
+        element: <PostManagement />,
+      },
+      {
+        path: "reports",
+        element: <ReportManagement />,
+      },
+      {
+        path: "account",
+        element: <AccountPage />,
+      }
+    ]
   }
+
 ]);
 
+
 ReactDOM.createRoot(document.getElementById("root")).render(
-  <Provider store={store}>
-    {/* // <AuthWrapper> */}
-    <RouterProvider router={router} />
-    {/* // </AuthWrapper> */}
-  </Provider>
+  <ConfigProvider getPopupContainer={() => document.body}>
+    <AntdApp>
+      <Provider store={store}>
+        <RouterProvider router={router} />
+      </Provider>
+    </AntdApp>
+  </ConfigProvider>
 );
+
