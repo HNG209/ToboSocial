@@ -17,8 +17,24 @@ const unlikePostAPI = (postId, userId) => {
 }
 
 // Comment APIs
-const fetchCommentsByPostAPI = (postId, page = 1, limit = 10) => {
+const fetchCommentsByPostAPI = (postId, page = 1, limit = 10) => { //?
     const URL_BACKEND = `/v1/api/comments?post=${postId}&page=${page}&limit=${limit}`;
+    return axios.get(URL_BACKEND);
+}
+
+// Hung sua lai
+const fetchPostCommentsAPI = (postId) => {
+    const URL_BACKEND = `v1/api/posts/${postId}/comments`;
+    return axios.get(URL_BACKEND);
+}
+
+const fetchPostCommentsAPIv2 = (postId, userId) => { //v2: có trả về trạng thái đã like bình luận của người dùng
+    const URL_BACKEND = `v1/api/posts/${postId}/comments`;
+    return axios.post(URL_BACKEND, { userId });
+}
+
+const fetchPostAuthorAPI = (postId) => {
+    const URL_BACKEND = `v1/api/${postId}/author`;
     return axios.get(URL_BACKEND);
 }
 
@@ -58,16 +74,64 @@ const fetchPostByUserAPI = (userId, page = 1, limit = 10) => {
     return axios.get(URL_BACKEND);
 }
 
+//user api
+const getUserAPI = (userId) => {
+    const URL_BACKEND = `/v1/api/users/${userId}`;
+    return axios.get(URL_BACKEND);
+}
+
+//update user api
+const updateUserAPI = (data) => {
+    const URL_BACKEND = `/v1/api/users`;
+    return axios.put(URL_BACKEND, data);
+}
+
+//like API v2
+const likeAPIv2 = (postId, userId, onModel) => {
+    const URL_BACKEND = `/v1/api/like/${postId}`;
+    return axios.post(URL_BACKEND, { userId, onModel })
+}
+
+const unlikeAPIv2 = (postId, userId, onModel) => {
+    const URL_BACKEND = `/v1/api/unlike/${postId}`;
+    return axios.post(URL_BACKEND, { userId, onModel })
+}
+
+const likeStatusAPIv2 = (postId, userId, onModel) => {
+    const URL_BACKEND = `/v1/api/is-liked/${postId}`;
+    return axios.post(URL_BACKEND, { userId, onModel })
+}
+
+const fetchLikersAPIv2 = (postId, onModel) => {
+    const URL_BACKEND = `/v1/api/likers/${postId}`;
+    return axios.post(URL_BACKEND, { onModel })
+}
+
+const counLikeAPIv2 = (postId, onModel) => {
+    const URL_BACKEND = `/v1/api/like/count${postId}`;
+    return axios.post(URL_BACKEND, { onModel })
+}
+
 export {
     fetchPostsAPI,
     likePostAPI,
     unlikePostAPI,
     fetchCommentsByPostAPI,
+    fetchPostCommentsAPI,
+    fetchPostCommentsAPIv2,
     createCommentAPI,
     deleteCommentAPI,
     updateCommentAPI,
     likeCommentAPI,
     unlikeCommentAPI,
     fetchPostDetailAPI,
-    fetchPostByUserAPI
+    fetchPostByUserAPI,
+    getUserAPI,
+    updateUserAPI,
+    fetchPostAuthorAPI,
+    likeAPIv2,
+    unlikeAPIv2,
+    likeStatusAPIv2,
+    fetchLikersAPIv2,
+    counLikeAPIv2
 };
