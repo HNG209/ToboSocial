@@ -8,7 +8,7 @@ import 'slick-carousel/slick/slick.css';
 import 'slick-carousel/slick/slick-theme.css';
 import { useDispatch, useSelector } from 'react-redux';
 import { getCurrentUser } from '../../redux/profile/profileSlice';
-import { createComment, toggleLike } from '../../redux/post/selectedPostSlice';
+import { createComment, toggleCommentLike, toggleLike } from '../../redux/post/selectedPostSlice';
 
 const NextArrow = ({ onClick }) => (
     <div className="absolute right-3 top-1/2 transform -translate-y-1/2 z-10 cursor-pointer text-white bg-black/50 p-1 rounded-full" onClick={onClick}>
@@ -51,7 +51,6 @@ const PostDetail = ({ open, onClose }) => {
         setIsLiked(likeStatus)
     }, [likeStatus])
 
-    console.log('like', isLiked)
 
     const handleCommentChange = (e) => setComment(e.target.value);
 
@@ -66,6 +65,10 @@ const PostDetail = ({ open, onClose }) => {
 
     const togglePostLike = () => {
         dispatch(toggleLike(postDetail._id))
+    }
+
+    const toggleCmtLike = (commentId) => {
+        dispatch(toggleCommentLike(commentId))
     }
 
     const toggleMute = () => setMuted(!muted);
@@ -155,7 +158,12 @@ const PostDetail = ({ open, onClose }) => {
                                     <span className='ml-2 font-semibold'>{'@' + c?.user?.username}</span>
                                     <span className='ml-1'>{c?.text}</span>
                                 </div>
-                                <Heart className="cursor-pointer" />
+                                {
+                                    c?.isLiked ?
+                                        <HeartFilled onClick={() => { toggleCmtLike(c._id) }} size={30} className="cursor-pointer text-lg mr-3" /> :
+                                        <HeartOutlined onClick={() => { toggleCmtLike(c._id) }} size={30} className="cursor-pointer text-lg mr-3" />
+                                }
+
                             </div>
                         ))}
                     </div>

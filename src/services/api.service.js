@@ -28,6 +28,11 @@ const fetchPostCommentsAPI = (postId) => {
     return axios.get(URL_BACKEND);
 }
 
+const fetchPostCommentsAPIv2 = (postId, userId) => { //v2: có trả về trạng thái đã like bình luận của người dùng
+    const URL_BACKEND = `v1/api/posts/${postId}/comments`;
+    return axios.post(URL_BACKEND, { userId });
+}
+
 const fetchPostAuthorAPI = (postId) => {
     const URL_BACKEND = `v1/api/${postId}/author`;
     return axios.get(URL_BACKEND);
@@ -82,29 +87,29 @@ const updateUserAPI = (data) => {
 }
 
 //like API v2
-const likePostAPIv2 = (postId, userId) => {
+const likeAPIv2 = (postId, userId, onModel) => {
     const URL_BACKEND = `/v1/api/like/${postId}`;
-    return axios.post(URL_BACKEND, { userId })
+    return axios.post(URL_BACKEND, { userId, onModel })
 }
 
-const unlikePostAPIv2 = (postId, userId) => {
+const unlikeAPIv2 = (postId, userId, onModel) => {
     const URL_BACKEND = `/v1/api/unlike/${postId}`;
-    return axios.post(URL_BACKEND, { userId })
+    return axios.post(URL_BACKEND, { userId, onModel })
 }
 
-const likeStatusAPIv2 = (postId, userId) => {
-    const URL_BACKEND = `/v1/api/${postId}/status`;
-    return axios.post(URL_BACKEND, { userId })
+const likeStatusAPIv2 = (postId, userId, onModel) => {
+    const URL_BACKEND = `/v1/api/is-liked/${postId}`;
+    return axios.post(URL_BACKEND, { userId, onModel })
 }
 
-const fetchPostLikersv2 = (postId) => {
-    const URL_BACKEND = `/v1/api/${postId}/users`;
-    return axios.get(URL_BACKEND)
+const fetchLikersAPIv2 = (postId, onModel) => {
+    const URL_BACKEND = `/v1/api/likers/${postId}`;
+    return axios.post(URL_BACKEND, { onModel })
 }
 
-const countPostLikeAPIv2 = (postId) => {
-    const URL_BACKEND = `/v1/api/${postId}/count`;
-    return axios.get(URL_BACKEND)
+const counLikeAPIv2 = (postId, onModel) => {
+    const URL_BACKEND = `/v1/api/like/count${postId}`;
+    return axios.post(URL_BACKEND, { onModel })
 }
 
 export {
@@ -113,6 +118,7 @@ export {
     unlikePostAPI,
     fetchCommentsByPostAPI,
     fetchPostCommentsAPI,
+    fetchPostCommentsAPIv2,
     createCommentAPI,
     deleteCommentAPI,
     updateCommentAPI,
@@ -122,10 +128,10 @@ export {
     fetchPostByUserAPI,
     getUserAPI,
     updateUserAPI,
-    likePostAPIv2,
-    unlikePostAPIv2,
-    likeStatusAPIv2,
-    countPostLikeAPIv2,
     fetchPostAuthorAPI,
-    fetchPostLikersv2
+    likeAPIv2,
+    unlikeAPIv2,
+    likeStatusAPIv2,
+    fetchLikersAPIv2,
+    counLikeAPIv2
 };

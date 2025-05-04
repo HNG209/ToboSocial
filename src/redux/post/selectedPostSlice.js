@@ -1,5 +1,5 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
-import { createCommentAPI, fetchPostAuthorAPI, fetchPostCommentsAPI, fetchPostDetailAPI, fetchPostLikersv2, likePostAPIv2, likeStatusAPIv2, unlikePostAPIv2 } from "../../services/api.service";
+import { createCommentAPI, fetchPostAuthorAPI, fetchLikersAPIv2, fetchPostCommentsAPIv2, fetchPostDetailAPI, likeStatusAPIv2, likeAPIv2, unlikeAPIv2 } from "../../services/api.service";
 
 //get user from localStorage
 const userFromStorage = localStorage.getItem('user')
@@ -16,11 +16,11 @@ export const fetchPostDetailById = createAsyncThunk('posts/fetchPostById', async
         // fetch author
         const authorResponse = await fetchPostAuthorAPI(postId)
         // fetch comments
-        const commentsResponse = await fetchPostCommentsAPI(postId)
+        const commentsResponse = await fetchPostCommentsAPIv2(postId, userId)
         // fetch post likers
-        const likersResponse = await fetchPostLikersv2(postId)
+        const likersResponse = await fetchLikersAPIv2(postId, 'post')
         // like status
-        const likeStatus = await likeStatusAPIv2(postId, userId)
+        const likeStatus = await likeStatusAPIv2(postId, userId, 'post')
 
         return { postResponse, authorResponse, commentsResponse, likersResponse, likeStatus };
     } catch (error) {
@@ -54,14 +54,29 @@ export const likePost = createAsyncThunk('posts/likePost', async (postId, { reje
 
 export const toggleLike = createAsyncThunk('posts/toggleLike', async (postId, { rejectWithValue }) => {
     try {
-        const rs = await likeStatusAPIv2(postId, userId);
-        
-        if(!rs.isLiked) {
-            return await likePostAPIv2(postId, userId);
+        const rs = await likeStatusAPIv2(postId, userId, 'post');
+        if (!rs.isLiked) {
+            return await likeAPIv2(postId, userId, 'post');
         }
 
-        return await unlikePostAPIv2(postId, userId);
-        
+        return await unlikeAPIv2(postId, userId, 'post');
+
+    } catch (error) {
+        console.error('Error in fetching post detail:', error.message);
+        return rejectWithValue(error.message);
+    }
+});
+
+export const toggleCommentLike = createAsyncThunk('posts/toggleCommentLike', async (commentId, { rejectWithValue }) => {
+    try {
+        const rs = await likeStatusAPIv2(commentId, userId, 'comment');
+
+        if (!rs.isLiked) {
+            return await likeAPIv2(commentId, userId, 'comment');
+        }
+
+        return await unlikeAPIv2(commentId, userId, 'comment');
+
     } catch (error) {
         console.error('Error in fetching post detail:', error.message);
         return rejectWithValue(error.message);
@@ -74,7 +89,7 @@ const selectedPostSlice = createSlice({
         author: null, // thông tin tác giả của bài viết
         post: {}, // chi tiết bài viết
         isLiked: false, // đã thích bài viết hay chưa, tương đối với người dùng hiện tại đang đăng nhập
-        comments: [], // danh sách bình luận của bài viết
+        comments: [], // danh sách bình luận của bài viết, đánh dấu đã like đối với người dùng hiện tại
         likers: [], // danh sách những người like bài viết
         status: 'idle', // Trạng thái tải dữ liệu
         error: null, // Lỗi nếu có
@@ -91,7 +106,7 @@ const selectedPostSlice = createSlice({
                 state.status = 'succeeded';
                 state.post = postResponse;
                 state.author = authorResponse;
-                state.comments = commentsResponse;
+                state.comments = commentsResponse; // đã có trạng thái like của người dùng
                 state.likers = likersResponse.users;
                 state.isLiked = likeStatus.isLiked;
             })
@@ -122,6 +137,25 @@ const selectedPostSlice = createSlice({
                 state.isLiked = action.payload.isLiked;
             })
             .addCase(toggleLike.rejected, (state, action) => {
+                state.status = 'failed';
+                state.error = action.payload;
+            })
+
+            //toggle comment like
+            .addCase(toggleCommentLike.pending, (state) => {
+                state.status = 'loading';
+            })
+            .addCase(toggleCommentLike.fulfilled, (state, action) => {
+                state.status = 'succeeded';
+
+                const { targetId, isLiked } = action.payload;
+
+                const commentIndex = state.comments.findIndex(c => c._id === targetId);
+                if (commentIndex !== -1) {
+                    state.comments[commentIndex].isLiked = isLiked;
+                }
+            })
+            .addCase(toggleCommentLike.rejected, (state, action) => {
                 state.status = 'failed';
                 state.error = action.payload;
             })

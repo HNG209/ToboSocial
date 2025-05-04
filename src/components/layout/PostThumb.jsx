@@ -3,7 +3,7 @@ import {
     MessageOutlined,
 } from '@ant-design/icons';
 import PostDetail from './PostDetail';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { fetchComments, fetchPosts } from '../../redux/post/postsSlice';
 import { fetchPostComments } from '../../redux/comments/commentsSlice';
@@ -28,7 +28,6 @@ export default function PostThumb({ post }) {
                 <div
                     onClick={() => {
                         dispatch(fetchPostDetailById(post._id))
-                        dispatch(fetchPostComments(post._id))
                         setIsModalOpen(true)
                     }}
                     className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col items-center justify-center gap-2 cursor-pointer"
@@ -48,7 +47,6 @@ export default function PostThumb({ post }) {
             </div>
 
             <PostDetail
-                post={post}
                 open={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
             />
