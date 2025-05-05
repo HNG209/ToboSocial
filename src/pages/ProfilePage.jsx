@@ -2,11 +2,13 @@ import { Avatar, Button, Modal } from "antd";
 import ProfileMenu from "../components/layout/ProfileMenu";
 import PostThumb from "../components/layout/PostThumb";
 import React, { useEffect, useState } from "react";
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useDispatch, useSelector } from "react-redux";
-import { fetchPostByUser, getCurrentUser } from "../redux/profile/profileSlice";
+import { fetchPostByUser, getCurrentUser, setStatus } from "../redux/profile/profileSlice";
 
 const ProfilePage = () => {
+    const { id } = useParams();
+
     const [isModalOpen, setIsModalOpen] = useState(false);
     const navigate = useNavigate();
 
@@ -17,10 +19,15 @@ const ProfilePage = () => {
 
     useEffect(() => {
         if (status === 'idle') {
-            dispatch(getCurrentUser({}));
-            dispatch(fetchPostByUser({page: 1, limit: 10}));
+            dispatch(getCurrentUser({ id }));
+            dispatch(fetchPostByUser({ id, page: 1, limit: 10 }));
         }
     }, [dispatch, status]);
+
+    //id thay đổi -> set status thành idle để load lại dữ liệu mới
+    useEffect(() => {
+        dispatch(setStatus('idle'))
+    }, [id])
 
     const showModal = () => {
         setIsModalOpen(true);
@@ -56,7 +63,11 @@ const ProfilePage = () => {
                         </div>
                     </div>
                     <div>
-                        <Button type="primary" danger className="mt-4" size="large" onClick={showModal}>Edit profile</Button>
+                        {
+                            id == undefined ?
+                                <Button type="primary" danger className="mt-4" size="large" onClick={showModal}>Edit profile</Button> :
+                                <Button type="primary" className="mt-4" size="large" onClick={showModal}>Follow</Button>
+                        }
                         <Button type="default" className="mt-4 ml-2" size="large">Settings</Button>
                     </div>
                     <p className="text-gray-500 mt-2">{userData?.profile?.bio}</p>
