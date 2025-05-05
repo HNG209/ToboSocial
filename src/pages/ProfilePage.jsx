@@ -85,14 +85,12 @@ const ProfilePage = () => {
             </div>
 
             <div>
-                {/* <h2 className="text-2xl text-center mt-4">Posts</h2> */}
                 <div className="grid grid-cols-3 gap-4 p-4">
                     {
                         posts.map((post, index) => (
                             <PostThumb key={index} post={post} />
                         ))
                     }
-                    {/* <PostThumb></PostThumb> */}
                 </div>
             </div>
         </>

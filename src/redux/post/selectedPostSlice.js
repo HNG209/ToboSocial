@@ -135,6 +135,9 @@ const selectedPostSlice = createSlice({
             .addCase(toggleLike.fulfilled, (state, action) => {
                 state.status = 'succeeded';
                 state.isLiked = action.payload.isLiked;
+                if (state.post) {
+                    state.post.likeCount = action.payload.isLiked ? state.post.likeCount + 1 : state.post.likeCount - 1;
+                }
             })
             .addCase(toggleLike.rejected, (state, action) => {
                 state.status = 'failed';
