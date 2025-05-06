@@ -70,7 +70,6 @@ const fetchPostDetailAPI = (postId) => {
 
 const fetchPostByUserAPI = (userId, page = 1, limit = 10) => {
     const URL_BACKEND = `/v1/api//users/${userId}/posts?page=${page}&limit=${limit}`;
-    console.log(URL_BACKEND);
     return axios.get(URL_BACKEND);
 }
 
@@ -79,6 +78,13 @@ const getUserAPI = (userId) => {
     const URL_BACKEND = `/v1/api/users/${userId}`;
     return axios.get(URL_BACKEND);
 }
+
+// v2 get user
+const getUserAPIv2 = (userId, currentUserId) => {
+    const URL_BACKEND = `/v1/api/users/${userId}?currentUserId=${currentUserId}`;
+    return axios.get(URL_BACKEND);
+}
+
 
 //update user api
 const updateUserAPI = (data) => {
@@ -112,6 +118,38 @@ const counLikeAPIv2 = (postId, onModel) => {
     return axios.post(URL_BACKEND, { onModel })
 }
 
+//follow API
+// Follow người dùng
+const followUserAPI = (subjectId, followingId) => {
+    const URL_BACKEND = `v1/api/follow`;
+    return axios.post(URL_BACKEND, { subjectId, followingId });
+};
+
+// Unfollow người dùng
+const unfollowUserAPI = (subjectId, followingId) => {
+    const URL_BACKEND = `v1/api/unfollow`;
+    return axios.post(URL_BACKEND, { subjectId, followingId });
+};
+
+// Lấy danh sách người đang được user follow
+const getFollowingUsersAPI = (userId) => {
+    const URL_BACKEND = `v1/api/${userId}/following`;
+    return axios.get(URL_BACKEND);
+};
+
+// Lấy danh sách người đang follow user
+const getFollowersAPI = (userId) => {
+    const URL_BACKEND = `v1/api/${userId}/followers`;
+    return axios.get(URL_BACKEND);
+};
+
+// Kiểm tra đã follow hay chưa
+const isFollowingAPI = (subjectId, followingId) => {
+    const URL_BACKEND = `v1/api/is-following?subjectId=${subjectId}&followingId=${followingId}`;
+    return axios.get(URL_BACKEND);
+};
+
+
 
 const createPostAPI = async (postData) => {
     try {
@@ -137,6 +175,7 @@ export {
     fetchPostDetailAPI,
     fetchPostByUserAPI,
     getUserAPI,
+    getUserAPIv2,
     updateUserAPI,
     fetchPostAuthorAPI,
     likeAPIv2,
@@ -144,5 +183,10 @@ export {
     likeStatusAPIv2,
     fetchLikersAPIv2,
     counLikeAPIv2,
-    createPostAPI
+    createPostAPI,
+    followUserAPI,
+    unfollowUserAPI,
+    getFollowingUsersAPI,
+    getFollowersAPI,
+    isFollowingAPI
 };

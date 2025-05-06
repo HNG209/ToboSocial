@@ -1,37 +1,43 @@
-import { fetchPostByUserAPI, getUserAPI, updateUserAPI } from "../../services/api.service";
+import { fetchPostByUserAPI, followUserAPI, getUserAPI, getUserAPIv2, unfollowUserAPI, updateUserAPI } from "../../services/api.service";
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 
-//get user from localStorage
-const userFromStorage = localStorage.getItem('user')
-    ? JSON.parse(localStorage.getItem('user'))
-    : null;
+const getLocalStorageId = () => {
+    //get user from localStorage
+    const userFromStorage = localStorage.getItem('user')
+        ? JSON.parse(localStorage.getItem('user'))
+        : null;
 
     //get user by id in localStorage
-const userId = userFromStorage ? userFromStorage._id : null; // Lấy userId từ localStorage
+    return userFromStorage ? userFromStorage._id : null; // Lấy userId từ localStorage
+}
 
-export const fetchPostByUser = createAsyncThunk('posts/fetchPostByUser', async ({ page, limit }, { rejectWithValue }) => {
-    try {
-        console.log('Fetching posts for user:', userId, 'Page:', page, 'Limit:', limit);
-        const response = await fetchPostByUserAPI(userId, page, limit);
-        return response;
-    } catch (error) {
-        console.error('Error in fetchPostByUser:', error.message);
-        return rejectWithValue(error.message);
+export const fetchPostByUser = createAsyncThunk(
+    'posts/fetchPostByUser',
+    async ({ id, page, limit }, { rejectWithValue }) => {
+        const resolvedId = id ?? getLocalStorageId(); // Nếu id != null/undefined thì dùng id, ngược lại dùng userId từ storage
+        try {
+            const response = await fetchPostByUserAPI(resolvedId, page, limit);
+            return response;
+        } catch (error) {
+            console.error('Error in fetchPostByUser:', error.message);
+            return rejectWithValue(error.message);
+        }
     }
-});
+);
 
-
-export const getCurrentUser = createAsyncThunk('user/getCurrentUser', async ({ rejectWithValue }) => {
-    try {
-        const response = await getUserAPI(userId);
-        return response;
-    } catch (error) {
-        console.error('Error in getUserById:', error.message);
-        return rejectWithValue(error.message);
+export const getCurrentUser = createAsyncThunk(
+    'user/getCurrentUser',
+    async ({ id }, { rejectWithValue }) => {
+        const resolvedId = id ?? getLocalStorageId();
+        try {
+            const response = await getUserAPIv2(resolvedId, getLocalStorageId());
+            return response;
+        } catch (error) {
+            console.error('Error in getUserById:', error.message);
+            return rejectWithValue(error.message);
+        }
     }
-});
-
-//get post and current user by id
+);
 
 
 //update user by id
@@ -45,16 +51,42 @@ export const updateUser = createAsyncThunk('user/updateUser', async (data, { rej
     }
 });
 
+export const followUser = createAsyncThunk('user/followUser', async (id, { rejectWithValue }) => {
+    try {
+        const response = await followUserAPI(getLocalStorageId(), id);
+        return response;
+    } catch (error) {
+        console.error('Error in followUser:', error.message);
+        return rejectWithValue(error.message);
+    }
+});
+
+export const unfollowUser = createAsyncThunk('user/unfollowUser', async (id, { rejectWithValue }) => {
+    try {
+        const response = await unfollowUserAPI(getLocalStorageId(), id);
+        return response;
+    } catch (error) {
+        console.error('Error in unfollowUser:', error.message);
+        return rejectWithValue(error.message);
+    }
+});
+
+const initialState = {
+    user: null, // Thông tin người dùng hiện tại
+    posts: [], // Danh sách bài viết
+    postDetail: null, // Chi tiết bài viết
+    status: 'idle', // Trạng thái tải dữ liệu
+    error: null, // Lỗi nếu có
+};
+
 const profileSlice = createSlice({
     name: 'profile',
-    initialState: {
-        user: null, // Thông tin người dùng hiện tại đã đăng nhập
-        posts: [], // Danh sách bài viết
-        postDetail: null, // Chi tiết bài viết
-        status: 'idle', // Trạng thái tải dữ liệu
-        error: null, // Lỗi nếu có
+    initialState,
+    reducers: {
+        setStatus: (state, action) => {
+            state.status = action.payload; // payload là giá trị status mới, ví dụ: 'idle', 'loading', v.v.
+        }
     },
-    reducers: {},
     extraReducers: (builder) => {
         builder
             // ===== Fetch Posts by User =====
@@ -92,8 +124,37 @@ const profileSlice = createSlice({
             .addCase(updateUser.rejected, (state, action) => {
                 state.status = 'failed'; // Đặt trạng thái thành failed
                 state.error = action.payload; // Lưu lỗi nếu có
-            });            
-        }
+            })
+
+            // follow user
+            .addCase(followUser.pending, (state) => {
+                state.status = 'loading'; // Đặt trạng thái thành loading
+            })
+            .addCase(followUser.fulfilled, (state, action) => {
+                state.status = 'succeeded'; // Đặt trạng thái thành succeeded
+                state.user.isFollowedByCurrentUser = action.payload?.isFollowing;
+                // state.user = action.payload; // Cập nhật thông tin người dùng từ API
+            })
+            .addCase(followUser.rejected, (state, action) => {
+                state.status = 'failed'; // Đặt trạng thái thành failed
+                state.error = action.payload; // Lưu lỗi nếu có
+            })
+
+            // unfollow user
+            .addCase(unfollowUser.pending, (state) => {
+                state.status = 'loading'; // Đặt trạng thái thành loading
+            })
+            .addCase(unfollowUser.fulfilled, (state, action) => {
+                state.status = 'succeeded'; // Đặt trạng thái thành succeeded
+                state.user.isFollowedByCurrentUser = action.payload?.isFollowing;
+                // state.user = action.payload; // Cập nhật thông tin người dùng từ API
+            })
+            .addCase(unfollowUser.rejected, (state, action) => {
+                state.status = 'failed'; // Đặt trạng thái thành failed
+                state.error = action.payload; // Lưu lỗi nếu có
+            });
+    }
 });
 
+export const { setStatus } = profileSlice.actions;
 export default profileSlice.reducer;

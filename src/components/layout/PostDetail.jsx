@@ -9,6 +9,7 @@ import 'slick-carousel/slick/slick-theme.css';
 import { useDispatch, useSelector } from 'react-redux';
 import { getCurrentUser } from '../../redux/profile/profileSlice';
 import { createComment, toggleCommentLike, toggleLike } from '../../redux/post/selectedPostSlice';
+import { useNavigate } from 'react-router-dom';
 
 const NextArrow = ({ onClick }) => (
     <div className="absolute right-3 top-1/2 transform -translate-y-1/2 z-10 cursor-pointer text-white bg-black/50 p-1 rounded-full" onClick={onClick}>
@@ -22,6 +23,42 @@ const PrevArrow = ({ onClick }) => (
     </div>
 );
 
+const formatCommentTime = (createdAt) => {
+    const now = new Date();
+    const created = new Date(createdAt);
+    const diffMs = now - created;
+    const diffSec = Math.floor(diffMs / 1000);
+    const diffMin = Math.floor(diffSec / 60);
+    const diffHr = Math.floor(diffMin / 60);
+    const diffDay = Math.floor(diffHr / 24);
+
+    if (diffDay < 30) {
+        if (diffDay >= 1) return `${diffDay} day${diffDay > 1 ? 's' : ''} ago`;
+        if (diffHr >= 1) return `${diffHr} hour${diffHr > 1 ? 's' : ''} ago`;
+        if (diffMin >= 1) return `${diffMin} minute${diffMin > 1 ? 's' : ''} ago`;
+        return 'Just now';
+    }
+
+    return created.toLocaleString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true,
+        timeZoneName: 'short',
+    });
+};
+
+//get user from localStorage
+const userFromStorage = localStorage.getItem('user')
+    ? JSON.parse(localStorage.getItem('user'))
+    : null;
+
+//get user by id in localStorage
+const currentUserId = userFromStorage ? userFromStorage._id : null; // Lấy userId từ localStorage
+
+
 const PostDetail = ({ open, onClose }) => {
     const [muted, setMuted] = useState(true);
     const [comment, setComment] = useState('');
@@ -29,19 +66,13 @@ const PostDetail = ({ open, onClose }) => {
     const [isLiked, setIsLiked] = useState(false)
 
     const dispatch = useDispatch();
+    const navigate = useNavigate();
+
     const postDetail = useSelector((state) => state.selectedPost.post)
     const postComments = useSelector((state) => state.selectedPost.comments)
     const likeStatus = useSelector((state) => state.selectedPost.isLiked)
 
     const userData = useSelector((state) => state.profile.user); // current user's data
-    const status = useSelector((state) => state.profile.status);
-
-    // useEffect(() => {
-    //     if (status === 'idle') {
-    //         dispatch(getCurrentUser({}));
-    //         dispatch(fetchPostByUser({ page: 1, limit: 10 }));
-    //     }
-    // }, [dispatch, status]);
 
     useEffect(() => {
         setComments(postComments)
@@ -50,7 +81,6 @@ const PostDetail = ({ open, onClose }) => {
     useEffect(() => {
         setIsLiked(likeStatus)
     }, [likeStatus])
-
 
     const handleCommentChange = (e) => setComment(e.target.value);
 
@@ -69,6 +99,15 @@ const PostDetail = ({ open, onClose }) => {
 
     const toggleCmtLike = (commentId) => {
         dispatch(toggleCommentLike(commentId))
+    }
+
+    const viewProfile = (userId) => {
+        if (userId === currentUserId) {
+            onClose();
+            return;
+        }
+        onClose();
+        navigate(`/profile/other/${userId}`)
     }
 
     const toggleMute = () => setMuted(!muted);
@@ -115,10 +154,6 @@ const PostDetail = ({ open, onClose }) => {
         </div>
     );
 
-
-
-    // if (!postDetail) return null;
-
     return (
         <Modal open={open} onCancel={onClose} footer={null} width="90vw" style={{ maxWidth: 1200 }} centered>
             <div className="bg-white flex flex-col lg:flex-row rounded-lg overflow-hidden w-full max-h-[90vh]">
@@ -135,38 +170,68 @@ const PostDetail = ({ open, onClose }) => {
                 {/* Right (desktop) or Bottom (mobile) */}
                 <div className="w-full lg:w-2/5 flex flex-col p-4 text-sm max-h-[50vh] lg:max-h-full overflow-y-auto">
                     {/* User Info */}
-                    <div className="flex items-center space-x-2 font-semibold mb-3">
+                    <div className="flex items-center space-x-2 font-semibold mb-3 border-b pb-2">
                         <Avatar size={30} className="absolute top-0 left-0 z-10 m-4" src={userData?.profile?.avatar || 'https://res.cloudinary.com/dwaldcj4v/image/upload/v1745215451/sodmg5jwxc8m2pho0i8r.jpg'}>
                             <img src="https://i.pravatar.cc/150?u=user" alt="user" className="w-full object-cover max-h-[600px]" />
                         </Avatar>
-                        <span className='ml-2'>{userData.fullName}</span>
+                        <span className='ml-2'>{userData?.fullName}</span>
                     </div>
 
                     <div className="space-y-2 mb-4 h-100 sm:max-h-80 md:max-h-96 overflow-y-auto">
-                        <hr />
-                        <Avatar size={30} className="absolute top-0 left-0 z-10 m-4" src={userData?.profile?.avatar || 'https://res.cloudinary.com/dwaldcj4v/image/upload/v1745215451/sodmg5jwxc8m2pho0i8r.jpg'}>
-                            <img src="https://i.pravatar.cc/150?u=user" alt="user" className="w-full object-cover max-h-[600px]" />
+                        <Avatar
+                            size={30}
+                            className="absolute top-0 left-0 z-10 m-4"
+                            src={userData?.profile?.avatar || 'https://res.cloudinary.com/dwaldcj4v/image/upload/v1745215451/sodmg5jwxc8m2pho0i8r.jpg'}
+                        >
+                            <img
+                                src="https://i.pravatar.cc/150?u=user"
+                                alt="user"
+                                className="w-full object-cover max-h-[600px]"
+                            />
                         </Avatar>
-                        <span className='ml-2 font-semibold'>{'@' + userData?.username}</span>
-                        <span className='ml-1'>{postDetail.caption}</span>
-                        {comments.map((c) => (
-                            <div className='mb-5 mt-2 ml-2 flex items-center justify-between'>
-                                <div>
-                                    <Avatar size={30} className="absolute top-0 left-0 z-10 m-4" src={c?.user?.profile?.avatar || 'https://res.cloudinary.com/dwaldcj4v/image/upload/v1745215451/sodmg5jwxc8m2pho0i8r.jpg'}>
-                                        <img src="https://i.pravatar.cc/150?u=user" alt="user" className="w-full object-cover max-h-[600px]" />
-                                    </Avatar>
-                                    <span className='ml-2 font-semibold'>{'@' + c?.user?.username}</span>
-                                    <span className='ml-1'>{c?.text}</span>
-                                </div>
-                                {
-                                    c?.isLiked ?
-                                        <HeartFilled onClick={() => { toggleCmtLike(c._id) }} size={30} className="cursor-pointer text-lg mr-3" /> :
-                                        <HeartOutlined onClick={() => { toggleCmtLike(c._id) }} size={30} className="cursor-pointer text-lg mr-3" />
-                                }
+                        <span className="ml-2 font-semibold">{'@' + userData?.username}</span>
+                        <span className="ml-1">{postDetail.caption}</span>
 
+                        {comments.map((c) => (
+                            <div key={c._id} className="mb-5 mt-2 ml-2 flex flex-col">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <Avatar
+                                            size={30}
+                                            className="absolute top-0 left-0 z-10 m-4 cursor-pointer"
+                                            src={c?.user?.profile?.avatar || 'https://res.cloudinary.com/dwaldcj4v/image/upload/v1745215451/sodmg5jwxc8m2pho0i8r.jpg'}
+                                        >
+                                            <img
+                                                src="https://i.pravatar.cc/150?u=user"
+                                                alt="user"
+                                                className="w-full object-cover max-h-[600px]"
+                                            />
+                                        </Avatar>
+                                        <span onClick={() => { viewProfile(c?.user?._id) }} className="ml-2 font-semibold cursor-pointer hover:text-purple-800">{'@' + c?.user?.username}</span>
+                                        <span className="ml-1">{c?.text}</span>
+                                    </div>
+                                    {c?.isLiked ? (
+                                        <HeartFilled
+                                            onClick={() => toggleCmtLike(c._id)}
+                                            size={30}
+                                            className="cursor-pointer text-lg mr-3"
+                                        />
+                                    ) : (
+                                        <HeartOutlined
+                                            onClick={() => toggleCmtLike(c._id)}
+                                            size={30}
+                                            className="cursor-pointer text-lg mr-3"
+                                        />
+                                    )}
+                                </div>
+                                {/* Formatted comment time in English */}
+                                <span className="text-xs text-gray-500 ml-10">
+                                    {formatCommentTime(c.createdAt)}
+                                </span>
                             </div>
                         ))}
                     </div>
+
 
                     {/* Actions */}
                     <div className="space-y-2">
@@ -183,7 +248,7 @@ const PostDetail = ({ open, onClose }) => {
                             </div>
                             <Bookmark className="cursor-pointer" />
                         </div>
-                        <div className="text-sm font-semibold">{postDetail.likes?.length || 0} likes</div>
+                        <div className="text-sm font-semibold">{postDetail?.likeCount || 0} likes</div>
 
                         {/* Comment input */}
                         <div className="flex items-center border-t pt-2">

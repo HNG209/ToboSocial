@@ -74,6 +74,12 @@ const router = createBrowserRouter([
         ),
       },
       {
+        path: "profile/other/:id",
+        element: (
+          <ProfilePage />
+        )
+      },
+      {
         path: "/edit-profile",
         element: (
           <PrivateRoute>
