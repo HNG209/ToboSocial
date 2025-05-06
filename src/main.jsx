@@ -30,6 +30,7 @@ import ReportManagement from "./pages/admin/ReportManagement";
 import NotificationPage from "./pages/client/NotificationPage";
 import AccountPage from "./pages/admin/AccountPage";
 import { ConfigProvider, App as AntdApp } from 'antd';
+import CreatePostPage from "./pages/CreatePostPage";
 
 
 
@@ -47,6 +48,10 @@ const router = createBrowserRouter([
       {
         path: "/explore",
         element: <ExplorePage />,
+      },
+      {
+        path: "/create",
+        element: <CreatePostPage/>
       },
       {
         path: "/reels",
