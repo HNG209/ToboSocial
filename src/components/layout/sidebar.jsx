@@ -11,6 +11,7 @@ import { Dropdown, Menu, notification } from "antd";
 import { NavLink, useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { logout } from "../../redux/auth/authSlice";
+import tobologo from "../../assets/logo.png"
 
 const Sidebar = () => {
     const dispatch = useDispatch();
@@ -57,7 +58,16 @@ const Sidebar = () => {
 
     return (
         <aside className="hidden md:flex flex-col w-16 lg:w-64 bg-white border-r shadow-sm p-4">
-            <div className="text-center font-bold mb-8 text-lg hidden lg:block">Tobo Social</div>
+            {/* <div className="text-center font-bold mb-8 text-lg hidden lg:block">Tobo Social</div> */}
+            <div className="w-[200px] h-[80px] overflow-hidden">
+                <img
+                    src={tobologo}
+                    alt="Tobo Logo"
+                    className="w-[200px] h-[80px] object-cover -m-[10px] ml-[-15px]"
+                />
+            </div>
+
+
             <nav className="flex flex-col gap-6 items-center lg:items-start">
                 {menuItems.map((item, idx) => (
                     item.dropdown ? (
