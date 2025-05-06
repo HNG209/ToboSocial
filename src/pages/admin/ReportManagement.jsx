@@ -21,7 +21,6 @@ import {
     Descriptions,
     Alert,
     Empty,
-    Spin,
 } from "antd";
 import {
     EyeOutlined,
@@ -128,11 +127,17 @@ const ReportManagement = () => {
 
         try {
             const [postResponse, countResponse] = await Promise.all([
-                fetchAdminPostsAPI({ "filter[_id]": report.post._id }),
-                getPostReportCountAPI(report.post._id),
+                report.post?._id
+                    ? fetchAdminPostsAPI({ "filter[_id]": report.post._id })
+                    : Promise.resolve({ posts: [] }),
+                report.post?._id
+                    ? getPostReportCountAPI(report.post._id)
+                    : Promise.resolve({ reportCount: 0 }),
             ]);
 
-            const postData = Array.isArray(postResponse.posts) ? postResponse.posts[0] : postResponse.posts?.[0] || null;
+            const postData = Array.isArray(postResponse.posts)
+                ? postResponse.posts[0]
+                : postResponse.posts?.[0] || null;
 
             setPostDetails(postData);
             setReportCount(countResponse.reportCount || 0);
@@ -218,7 +223,7 @@ const ReportManagement = () => {
 
         try {
             const { message: warningMessage } = values;
-            await warnUserAPI(postDetails.author._id, warningMessage, selectedReport.post._id);
+            await warnUserAPI(postDetails.author._id, warningMessage, selectedReport.post?._id);
             message.success("Gửi cảnh báo thành công");
             setIsWarnModalVisible(false);
             warnForm.resetFields();
@@ -267,25 +272,31 @@ const ReportManagement = () => {
             ellipsis: true,
             render: (text, record) => (
                 <div className="flex items-center">
-                    {record.post.mediaFiles?.[0]?.type === "image" && (
-                        <Image
-                            src={record.post.mediaFiles[0].url || "/placeholder.svg"}
-                            width={48}
-                            height={48}
-                            className="mr-3 object-cover rounded"
-                            preview={false}
-                            placeholder={
-                                <div className="w-12 h-12 bg-gray-100 flex items-center justify-center rounded">
-                                    <FileTextOutlined className="text-gray-400" />
-                                </div>
-                            }
-                        />
+                    {record.post ? (
+                        <>
+                            {record.post.mediaFiles?.[0]?.type === "image" && (
+                                <Image
+                                    src={record.post.mediaFiles[0].url || "/placeholder.svg"}
+                                    width={48}
+                                    height={48}
+                                    className="mr-3 object-cover rounded"
+                                    preview={false}
+                                    placeholder={
+                                        <div className="w-12 h-12 bg-gray-100 flex items-center justify-center rounded">
+                                            <FileTextOutlined className="text-gray-400" />
+                                        </div>
+                                    }
+                                />
+                            )}
+                            <Tooltip title={text || "Không có caption"}>
+                                <Text className="max-w-[300px] truncate">
+                                    {text || <Text type="secondary">Không có caption</Text>}
+                                </Text>
+                            </Tooltip>
+                        </>
+                    ) : (
+                        <Text type="secondary">Bài viết không tồn tại</Text>
                     )}
-                    <Tooltip title={text || "Không có caption"}>
-                        <Text className="max-w-[300px] truncate">
-                            {text || <Text type="secondary">Không có caption</Text>}
-                        </Text>
-                    </Tooltip>
                 </div>
             ),
         },
@@ -353,8 +364,9 @@ const ReportManagement = () => {
                     <Button
                         type="link"
                         icon={<LinkOutlined />}
-                        onClick={() => window.open(`/posts/${record.post._id}`, "_blank")}
+                        onClick={() => window.open(`/posts/${record.post?._id}`, "_blank")}
                         className="text-indigo-500 hover:text-indigo-600"
+                        disabled={!record.post}
                     >
                         Xem bài viết
                     </Button>
@@ -526,83 +538,96 @@ const ReportManagement = () => {
                                     disabled={!postDetails}
                                 >
                                     {postDetails ? (
-                                        <>
-                                            <Descriptions bordered column={1} size="small">
-                                                <Descriptions.Item label="Tác giả">
-                                                    <Space>
-                                                        <Avatar
-                                                            src={postDetails.author.profile?.avatar}
-                                                            icon={!postDetails.author.profile?.avatar && <UserOutlined />}
-                                                            size={32}
+                                        postDetails.deleted === true ? (
+                                            <Empty
+                                                description={
+                                                    <Text strong style={{ color: '#f5222d' }}>
+                                                        Bài viết đã bị xóa
+                                                    </Text>
+                                                }
+                                            />
+                                        ) : (
+                                            <>
+                                                <Descriptions bordered column={1} size="small">
+                                                    <Descriptions.Item label="Tác giả">
+                                                        <Space>
+                                                            <Avatar
+                                                                src={postDetails.author.profile?.avatar}
+                                                                icon={!postDetails.author.profile?.avatar && <UserOutlined />}
+                                                                size={32}
+                                                            />
+                                                            <Text strong>{postDetails.author.username || "Không xác định"}</Text>
+                                                        </Space>
+                                                    </Descriptions.Item>
+                                                    <Descriptions.Item label="Caption">
+                                                        {postDetails.caption || <Text type="secondary">Không có caption</Text>}
+                                                    </Descriptions.Item>
+                                                    <Descriptions.Item label="Ngày đăng">
+                                                        {postDetails.createdAt
+                                                            ? moment(postDetails.createdAt).format("DD/MM/YYYY HH:mm:ss")
+                                                            : <Text type="secondary">N/A</Text>}
+                                                    </Descriptions.Item>
+                                                    <Descriptions.Item label="Số lượt thích">
+                                                        <Badge count={postDetails.likes?.length || 0} showZero style={{ backgroundColor: "#1890ff" }} />
+                                                    </Descriptions.Item>
+                                                    <Descriptions.Item label="Số bình luận">
+                                                        <Badge
+                                                            count={postDetails.comments?.length || 0}
+                                                            showZero
+                                                            style={{ backgroundColor: "#52c41a" }}
                                                         />
-                                                        <Text strong>{postDetails.author.username || "Không xác định"}</Text>
-                                                    </Space>
-                                                </Descriptions.Item>
-                                                <Descriptions.Item label="Caption">
-                                                    {postDetails.caption || <Text type="secondary">Không có caption</Text>}
-                                                </Descriptions.Item>
-                                                <Descriptions.Item label="Ngày đăng">
-                                                    {postDetails.createdAt
-                                                        ? moment(postDetails.createdAt).format("DD/MM/YYYY HH:mm:ss")
-                                                        : <Text type="secondary">N/A</Text>}
-                                                </Descriptions.Item>
-                                                <Descriptions.Item label="Số lượt thích">
-                                                    <Badge count={postDetails.likes?.length || 0} showZero style={{ backgroundColor: "#1890ff" }} />
-                                                </Descriptions.Item>
-                                                <Descriptions.Item label="Số bình luận">
-                                                    <Badge
-                                                        count={postDetails.comments?.length || 0}
-                                                        showZero
-                                                        style={{ backgroundColor: "#52c41a" }}
-                                                    />
-                                                </Descriptions.Item>
-                                                <Descriptions.Item label="Số báo cáo">
-                                                    <Badge count={reportCount} showZero style={{ backgroundColor: "#f5222d" }} />
-                                                </Descriptions.Item>
-                                            </Descriptions>
-                                            <Divider orientation="left">Media</Divider>
-                                            {postDetails.mediaFiles?.length > 0 ? (
-                                                <div className="max-w-[500px] mx-auto">
-                                                    <Slider {...sliderSettings}>
-                                                        {postDetails.mediaFiles.map((media, index) => (
-                                                            <div key={index}>
-                                                                {media.type === "image" ? (
-                                                                    <Image
-                                                                        src={media.url || "/placeholder.svg"}
-                                                                        className="max-h-[400px] mx-auto object-contain"
-                                                                    />
-                                                                ) : (
-                                                                    <video
-                                                                        controls
-                                                                        className="max-h-[400px] max-w-full mx-auto block"
-                                                                    >
-                                                                        <source src={media.url} type="video/mp4" />
-                                                                        Your browser does not support the video tag.
-                                                                    </video>
-                                                                )}
-                                                            </div>
-                                                        ))}
-                                                    </Slider>
+                                                    </Descriptions.Item>
+                                                    <Descriptions.Item label="Số báo cáo">
+                                                        <Badge count={reportCount} showZero style={{ backgroundColor: "#f5222d" }} />
+                                                    </Descriptions.Item>
+                                                </Descriptions>
+                                                <Divider orientation="left">Media</Divider>
+                                                {postDetails.mediaFiles?.length > 0 ? (
+                                                    <div className="max-w-[500px] mx-auto">
+                                                        <Slider {...sliderSettings}>
+                                                            {postDetails.mediaFiles.map((media, index) => (
+                                                                <div key={index}>
+                                                                    {media.type === "image" ? (
+                                                                        <Image
+                                                                            src={media.url || "/placeholder.svg"}
+                                                                            className="max-h-[400px] mx-auto object-contain"
+                                                                        />
+                                                                    ) : (
+                                                                        <video
+                                                                            controls
+                                                                            className="max-h-[400px] max-w-full mx-auto block"
+                                                                        >
+                                                                            <source src={media.url} type="video/mp4" />
+                                                                            Your browser does not support the video tag.
+                                                                        </video>
+                                                                    )}
+                                                                </div>
+                                                            ))}
+                                                        </Slider>
+                                                    </div>
+                                                ) : (
+                                                    <Empty description="Không có media" />
+                                                )}
+                                                <div className="text-center mt-4">
+                                                    <Button
+                                                        type="primary"
+                                                        icon={<LinkOutlined />}
+                                                        onClick={() => window.open(`/posts/${selectedReport.post?._id}`, "_blank")}
+                                                        className="bg-indigo-500 hover:bg-indigo-600 text-white"
+                                                    >
+                                                        Xem bài viết trong tab mới
+                                                    </Button>
                                                 </div>
-                                            ) : (
-                                                <Empty description="Không có media" />
-                                            )}
-                                            <div className="text-center mt-4">
-                                                <Button
-                                                    type="primary"
-                                                    icon={<LinkOutlined />}
-                                                    onClick={() => window.open(`/posts/${selectedReport.post._id}`, "_blank")}
-                                                    className="bg-indigo-500 hover:bg-indigo-600 text-white"
-                                                >
-                                                    Xem bài viết trong tab mới
-                                                </Button>
-                                            </div>
-                                        </>
+                                            </>
+                                        )
                                     ) : (
-                                        <div className="text-center py-5">
-                                            <Spin />
-                                            <div className="mt-4">Đang tải thông tin bài viết...</div>
-                                        </div>
+                                        <Empty
+                                            description={
+                                                <Text strong style={{ color: '#f5222d' }}>
+                                                    Bài viết không tồn tại
+                                                </Text>
+                                            }
+                                        />
                                     )}
                                 </TabPane>
                             </Tabs>
@@ -620,11 +645,11 @@ const ReportManagement = () => {
                                             Đánh dấu đã xử lý
                                         </Button>
                                     )}
-                                    {postDetails && (
+                                    {postDetails && postDetails.deleted !== true && (
                                         <Popconfirm
                                             title="Bạn có chắc muốn xóa bài viết này?"
                                             description="Hành động này sẽ xóa bài viết và không thể khôi phục."
-                                            onConfirm={() => handleDeletePost(selectedReport.post._id)}
+                                            onConfirm={() => handleDeletePost(selectedReport.post?._id)}
                                             okText="Có"
                                             cancelText="Không"
                                             placement="topLeft"
@@ -745,13 +770,13 @@ const ReportManagement = () => {
                 </Modal>
 
                 <style jsx global>{`
-          .ant-table-row-pending {
-            background-color: #fff7e6;
-          }
-          .ant-table-row-pending:hover > td {
-            background-color: #fff1d6 !important;
-          }
-        `}</style>
+                    .ant-table-row-pending {
+                        background-color: #fff7e6;
+                    }
+                    .ant-table-row-pending:hover > td {
+                        background-color: #fff1d6 !important;
+                    }
+                `}</style>
             </Card>
         </div>
     );
