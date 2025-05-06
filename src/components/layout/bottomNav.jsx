@@ -1,30 +1,34 @@
 import {
-    AiOutlineHome,
-    AiOutlineSearch,
-    AiOutlineVideoCamera,
-    AiOutlinePlusCircle,
-    AiOutlineUser,
-} from "react-icons/ai";
+    HomeOutlined,
+    SearchOutlined,
+    CompassOutlined,
+    PlusOutlined,
+    UserOutlined,
+} from "@ant-design/icons";
+import { NavLink } from "react-router-dom";
 
 const BottomNav = () => {
     const menuItems = [
-        { icon: <AiOutlineHome size={24} />, label: "Home" },
-        { icon: <AiOutlineSearch size={24} />, label: "Search" },
-        { icon: <AiOutlineVideoCamera size={24} />, label: "Reels" },
-        { icon: <AiOutlinePlusCircle size={24} />, label: "Create" },
-        { icon: <AiOutlineUser size={24} />, label: "Profile" },
+        { icon: <HomeOutlined style={{ fontSize: '24px' }} />, label: "Home", to: "/" },
+        { icon: <SearchOutlined style={{ fontSize: '24px' }} />, label: "Search", to: "/search" },
+        { icon: <PlusOutlined style={{ fontSize: '24px' }} />, label: "Create", to: "/create" },
+        { icon: <CompassOutlined style={{ fontSize: '24px' }} />, label: "Explore", to: "/explore" },
+        { icon: <UserOutlined style={{ fontSize: '24px' }} />, label: "Profile", to: "/profile" },
     ];
 
     return (
         <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t shadow-md flex justify-around py-2 z-50">
             {menuItems.map((item, idx) => (
-                <a
+                <NavLink
                     key={idx}
-                    href="#"
-                    className="text-gray-700 hover:text-black"
+                    to={item.to}
+                    className={({ isActive }) =>
+                        `flex items-center justify-center text-gray-700 hover:text-black transition-colors ${isActive ? "text-black" : ""
+                        }`
+                    }
                 >
                     {item.icon}
-                </a>
+                </NavLink>
             ))}
         </nav>
     );

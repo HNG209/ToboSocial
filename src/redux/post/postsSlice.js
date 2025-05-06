@@ -12,6 +12,28 @@ import {
     fetchPostDetailAPI,
 } from '../../services/api.service';
 
+// Fetch posts with pagination
+export const fetchPosts = createAsyncThunk('posts/fetchPosts', async ({ page = 1, limit = 10 }, { rejectWithValue }) => {
+    try {
+        const response = await fetchPostsAPI(page, limit);
+        return { posts: response, page, limit };
+    } catch (error) {
+        console.error('Error in fetchPosts:', error.message);
+        return rejectWithValue(error.message);
+    }
+});
+
+// Fetch comments for a post with pagination
+export const fetchComments = createAsyncThunk('posts/fetchComments', async ({ postId, page = 1, limit = 10 }, { rejectWithValue }) => {
+    try {
+        const response = await fetchCommentsByPostAPI(postId, page, limit);
+        return { postId, comments: response, page, limit };
+    } catch (error) {
+        console.error('Error in fetchComments:', error.message);
+        return rejectWithValue(error.message);
+    }
+});
+
 // Like comment
 export const likeComment = createAsyncThunk('posts/likeComment', async ({ postId, commentId, userId }, { rejectWithValue }) => {
     try {
@@ -36,28 +58,7 @@ export const unlikeComment = createAsyncThunk('posts/unlikeComment', async ({ po
     }
 });
 
-// Fetch comments for a post
-export const fetchComments = createAsyncThunk('posts/fetchComments', async (postId, { rejectWithValue }) => {
-    try {
-        const response = await fetchCommentsByPostAPI(postId);
-        return { postId, comments: response };
-    } catch (error) {
-        console.error('Error in fetchComments:', error.message);
-        return rejectWithValue(error.message);
-    }
-});
-
-// Các async thunk khác (giữ nguyên)
-export const fetchPosts = createAsyncThunk('posts/fetchPosts', async (_, { rejectWithValue }) => {
-    try {
-        const response = await fetchPostsAPI();
-        return response;
-    } catch (error) {
-        console.error('Error in fetchPosts:', error.message);
-        return rejectWithValue(error.message);
-    }
-});
-
+// Other async thunks
 export const likePost = createAsyncThunk('posts/likePost', async ({ postId, userId }, { rejectWithValue }) => {
     try {
         const response = await likePostAPI(postId, userId);
@@ -118,7 +119,6 @@ export const fetchPostDetail = createAsyncThunk('posts/fetchPostDetail', async (
     }
 });
 
-
 const postsSlice = createSlice({
     name: 'posts',
     initialState: {
@@ -126,8 +126,26 @@ const postsSlice = createSlice({
         postDetail: null, // Chi tiết bài viết
         status: 'idle', // Trạng thái tải dữ liệu
         error: null, // Lỗi nếu có
+        currentPage: 1, // Trang hiện tại cho bài viết
+        hasMore: true, // Có còn bài viết để tải không
     },
-    reducers: {},
+    reducers: {
+        resetPosts: (state) => {
+            state.posts = [];
+            state.currentPage = 1;
+            state.hasMore = true;
+            state.status = 'idle';
+        },
+        resetComments: (state, action) => {
+            const { postId } = action.payload;
+            const post = state.posts.find(p => p._id === postId);
+            if (post) {
+                post.comments = [];
+                post.currentCommentPage = 1;
+                post.hasMoreComments = true;
+            }
+        },
+    },
     extraReducers: (builder) => {
         builder
             // ===== Fetch All Posts =====
@@ -136,9 +154,50 @@ const postsSlice = createSlice({
             })
             .addCase(fetchPosts.fulfilled, (state, action) => {
                 state.status = 'succeeded';
-                state.posts = action.payload;
+                const { posts, page, limit } = action.payload;
+                if (page === 1) {
+                    state.posts = posts.map(post => ({
+                        ...post,
+                        currentCommentPage: 1,
+                        hasMoreComments: true,
+                    })); // Thay thế danh sách bài viết cho trang đầu tiên
+                } else {
+                    state.posts = [
+                        ...state.posts,
+                        ...posts.map(post => ({
+                            ...post,
+                            currentCommentPage: 1,
+                            hasMoreComments: true,
+                        })),
+                    ]; // Thêm bài viết mới vào danh sách
+                }
+                state.currentPage = page;
+                state.hasMore = posts.length === limit;
             })
             .addCase(fetchPosts.rejected, (state, action) => {
+                state.status = 'failed';
+                state.error = action.payload;
+            })
+
+            // ===== Fetch Comments =====
+            .addCase(fetchComments.pending, (state) => {
+                state.status = 'loading';
+            })
+            .addCase(fetchComments.fulfilled, (state, action) => {
+                state.status = 'succeeded';
+                const { postId, comments, page, limit } = action.payload;
+                const post = state.posts.find(p => p._id === postId);
+                if (post) {
+                    if (page === 1) {
+                        post.comments = comments; // Thay thế danh sách bình luận cho trang đầu tiên
+                    } else {
+                        post.comments = [...post.comments, ...comments]; // Thêm bình luận mới
+                    }
+                    post.currentCommentPage = page;
+                    post.hasMoreComments = comments.length === limit; // Kiểm tra xem còn bình luận để tải không
+                }
+            })
+            .addCase(fetchComments.rejected, (state, action) => {
                 state.status = 'failed';
                 state.error = action.payload;
             })
@@ -188,16 +247,6 @@ const postsSlice = createSlice({
             })
 
             // ===== Comments =====
-            .addCase(fetchComments.fulfilled, (state, action) => {
-                const { postId, comments } = action.payload;
-                const post = state.posts.find(p => p._id === postId);
-                if (post) {
-                    post.comments = comments;
-                }
-            })
-            .addCase(fetchComments.rejected, (state, action) => {
-                state.error = action.payload;
-            })
             .addCase(createComment.fulfilled, (state, action) => {
                 const { postId, comment } = action.payload;
                 const post = state.posts.find(p => p._id === postId);
@@ -235,7 +284,7 @@ const postsSlice = createSlice({
             // ===== Likes Comment =====
             .addCase(likeComment.fulfilled, (state, action) => {
                 const { postId, commentId, updatedComment } = action.payload;
-                console.log('likeComment response:', updatedComment); // Debug dữ liệu từ API
+                console.log('likeComment response:', updatedComment);
                 const post = state.posts.find(p => p._id === postId);
                 if (post) {
                     const commentIndex = post.comments.findIndex(c => c._id === commentId);
@@ -253,7 +302,7 @@ const postsSlice = createSlice({
             })
             .addCase(unlikeComment.fulfilled, (state, action) => {
                 const { postId, commentId, updatedComment } = action.payload;
-                console.log('unlikeComment response:', updatedComment); // Debug dữ liệu từ API
+                console.log('unlikeComment response:', updatedComment);
                 const post = state.posts.find(p => p._id === postId);
                 if (post) {
                     const commentIndex = post.comments.findIndex(c => c._id === commentId);
@@ -277,7 +326,7 @@ const postsSlice = createSlice({
             })
             .addCase(fetchPostDetail.fulfilled, (state, action) => {
                 state.status = 'succeeded';
-                state.postDetail = action.payload; // Gán bài viết chi tiết
+                state.postDetail = action.payload;
             })
             .addCase(fetchPostDetail.rejected, (state, action) => {
                 state.status = 'failed';
@@ -286,4 +335,5 @@ const postsSlice = createSlice({
     },
 });
 
+export const { resetPosts, resetComments } = postsSlice.actions;
 export default postsSlice.reducer;

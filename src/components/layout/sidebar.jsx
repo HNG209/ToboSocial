@@ -1,32 +1,58 @@
-// src/layout/Sidebar.jsx
 import {
     HomeOutlined,
     SearchOutlined,
     CompassOutlined,
-    VideoCameraOutlined,
-    MessageOutlined,
+    BellOutlined,
     PlusOutlined,
     UserOutlined,
-    GlobalOutlined,
     MenuOutlined,
-    BellOutlined,
 } from "@ant-design/icons";
-import { DiVisualstudio } from "react-icons/di";
-import { NavLink } from "react-router-dom";
+import { Dropdown, Menu, notification } from "antd";
+import { NavLink, useNavigate } from "react-router-dom";
+import { useDispatch } from "react-redux";
+import { logout } from "../../redux/auth/authSlice";
 
 const Sidebar = () => {
+    const dispatch = useDispatch();
+    const navigate = useNavigate();
+
+    const handleLogout = async () => {
+        try {
+            await dispatch(logout()).unwrap();
+            notification.success({
+                message: "Logged Out",
+                description: "You have been successfully logged out.",
+                placement: "topRight",
+            });
+            navigate("/login");
+        } catch (error) {
+            notification.error({
+                message: "Logout Failed",
+                description: error || "Failed to log out. Please try again.",
+                placement: "topRight",
+            });
+        }
+    };
+
+    const moreMenu = (
+        <Menu>
+            <Menu.Item key="change-password" onClick={() => navigate("/change-password")}>
+                Change Password
+            </Menu.Item>
+            <Menu.Item key="logout" onClick={handleLogout}>
+                Logout
+            </Menu.Item>
+        </Menu>
+    );
+
     const menuItems = [
         { icon: <HomeOutlined />, label: "Home", to: "/" },
         { icon: <SearchOutlined />, label: "Search", to: "/search" },
         { icon: <CompassOutlined />, label: "Explore", to: "/explore" },
-        { icon: <VideoCameraOutlined />, label: "Reels", to: "/reels" },
-        { icon: <MessageOutlined />, label: "Messages", to: "/messages" },
         { icon: <BellOutlined />, label: "Notifications", to: "/notifications" },
         { icon: <PlusOutlined />, label: "Create", to: "/create" },
         { icon: <UserOutlined />, label: "Profile", to: "/profile" },
-        { icon: <DiVisualstudio />, label: "AI Studio", to: "/studio" },
-        { icon: <GlobalOutlined />, label: "Threads", to: "/threads" },
-        { icon: <MenuOutlined />, label: "More", to: "/more" }
+        { icon: <MenuOutlined />, label: "More", to: "/more", dropdown: moreMenu },
     ];
 
     return (
@@ -34,17 +60,28 @@ const Sidebar = () => {
             <div className="text-center font-bold mb-8 text-lg hidden lg:block">Tobo Social</div>
             <nav className="flex flex-col gap-6 items-center lg:items-start">
                 {menuItems.map((item, idx) => (
-                    <NavLink
-                        key={idx}
-                        to={item.to}
-                        className={({ isActive }) =>
-                            `flex items-center gap-2 hover:text-black transition-colors ${isActive ? "text-black font-semibold" : "text-gray-700"
-                            }`
-                        }
-                    >
-                        {item.icon}
-                        <span className="hidden lg:inline">{item.label}</span>
-                    </NavLink>
+                    item.dropdown ? (
+                        <Dropdown key={idx} overlay={item.dropdown} trigger={["click"]}>
+                            <div
+                                className="flex items-center gap-2 hover:text-black transition-colors text-gray-700 cursor-pointer"
+                            >
+                                {item.icon}
+                                <span className="hidden lg:inline">{item.label}</span>
+                            </div>
+                        </Dropdown>
+                    ) : (
+                        <NavLink
+                            key={idx}
+                            to={item.to}
+                            className={({ isActive }) =>
+                                `flex items-center gap-2 hover:text-black transition-colors ${isActive ? "text-black font-semibold" : "text-gray-700"
+                                }`
+                            }
+                        >
+                            {item.icon}
+                            <span className="hidden lg:inline">{item.label}</span>
+                        </NavLink>
+                    )
                 ))}
             </nav>
         </aside>
