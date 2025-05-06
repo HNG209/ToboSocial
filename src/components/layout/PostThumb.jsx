@@ -36,7 +36,7 @@ export default function PostThumb({ post }) {
                     <div className="flex items-center gap-4 text-white text-sm">
                         <div className="flex items-center gap-1">
                             <HeartOutlined />
-                            <span>{post?.likes.length}</span>
+                            <span>{post?.likeCount}</span>
                         </div>
                         <div className="flex items-center gap-1">
                             <MessageOutlined />

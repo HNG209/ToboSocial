@@ -69,7 +69,7 @@ const fetchPostDetailAPI = (postId) => {
 }
 
 const fetchPostByUserAPI = (userId, page = 1, limit = 10) => {
-    const URL_BACKEND = `/v1/api//users/${userId}/posts?page=${page}&limit=${limit}`;
+    const URL_BACKEND = `/v1/api/users/${userId}/posts?page=${page}&limit=${limit}`;
     return axios.get(URL_BACKEND);
 }
 

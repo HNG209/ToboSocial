@@ -1,13 +1,15 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import { createCommentAPI, fetchPostAuthorAPI, fetchLikersAPIv2, fetchPostCommentsAPIv2, fetchPostDetailAPI, likeStatusAPIv2, likeAPIv2, unlikeAPIv2 } from "../../services/api.service";
 
-//get user from localStorage
-const userFromStorage = localStorage.getItem('user')
-    ? JSON.parse(localStorage.getItem('user'))
-    : null;
+const getLocalStorageId = () => {
+    //get user from localStorage
+    const userFromStorage = localStorage.getItem('user')
+        ? JSON.parse(localStorage.getItem('user'))
+        : null;
 
-//get user by id in localStorage
-const userId = userFromStorage ? userFromStorage._id : null; // Lấy userId từ localStorage
+    //get user by id in localStorage
+    return userFromStorage ? userFromStorage._id : null; // Lấy userId từ localStorage
+}
 
 export const fetchPostDetailById = createAsyncThunk('posts/fetchPostById', async (postId, { rejectWithValue }) => {
     try {
@@ -16,11 +18,11 @@ export const fetchPostDetailById = createAsyncThunk('posts/fetchPostById', async
         // fetch author
         const authorResponse = await fetchPostAuthorAPI(postId)
         // fetch comments
-        const commentsResponse = await fetchPostCommentsAPIv2(postId, userId)
+        const commentsResponse = await fetchPostCommentsAPIv2(postId, getLocalStorageId())
         // fetch post likers
         const likersResponse = await fetchLikersAPIv2(postId, 'post')
         // like status
-        const likeStatus = await likeStatusAPIv2(postId, userId, 'post')
+        const likeStatus = await likeStatusAPIv2(postId, getLocalStorageId(), 'post')
 
         return { postResponse, authorResponse, commentsResponse, likersResponse, likeStatus };
     } catch (error) {
@@ -32,7 +34,7 @@ export const fetchPostDetailById = createAsyncThunk('posts/fetchPostById', async
 export const createComment = createAsyncThunk('posts/createComment', async ({ postId, text }, { rejectWithValue }) => {
     try {
 
-        const response = await createCommentAPI(postId, userId, text);
+        const response = await createCommentAPI(postId, getLocalStorageId(), text);
 
         return response;
     } catch (error) {
@@ -43,7 +45,7 @@ export const createComment = createAsyncThunk('posts/createComment', async ({ po
 
 export const likePost = createAsyncThunk('posts/likePost', async (postId, { rejectWithValue }) => {
     try {
-        const response = await likePostAPIv2(postId, userId);
+        const response = await likePostAPIv2(postId, getLocalStorageId());
 
         return response;
     } catch (error) {
@@ -54,12 +56,12 @@ export const likePost = createAsyncThunk('posts/likePost', async (postId, { reje
 
 export const toggleLike = createAsyncThunk('posts/toggleLike', async (postId, { rejectWithValue }) => {
     try {
-        const rs = await likeStatusAPIv2(postId, userId, 'post');
+        const rs = await likeStatusAPIv2(postId, getLocalStorageId(), 'post');
         if (!rs.isLiked) {
-            return await likeAPIv2(postId, userId, 'post');
+            return await likeAPIv2(postId, getLocalStorageId(), 'post');
         }
 
-        return await unlikeAPIv2(postId, userId, 'post');
+        return await unlikeAPIv2(postId, getLocalStorageId(), 'post');
 
     } catch (error) {
         console.error('Error in fetching post detail:', error.message);
@@ -69,13 +71,13 @@ export const toggleLike = createAsyncThunk('posts/toggleLike', async (postId, { 
 
 export const toggleCommentLike = createAsyncThunk('posts/toggleCommentLike', async (commentId, { rejectWithValue }) => {
     try {
-        const rs = await likeStatusAPIv2(commentId, userId, 'comment');
+        const rs = await likeStatusAPIv2(commentId, getLocalStorageId(), 'comment');
 
         if (!rs.isLiked) {
-            return await likeAPIv2(commentId, userId, 'comment');
+            return await likeAPIv2(commentId, getLocalStorageId(), 'comment');
         }
 
-        return await unlikeAPIv2(commentId, userId, 'comment');
+        return await unlikeAPIv2(commentId, getLocalStorageId(), 'comment');
 
     } catch (error) {
         console.error('Error in fetching post detail:', error.message);

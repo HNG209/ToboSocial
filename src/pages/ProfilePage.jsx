@@ -59,11 +59,11 @@ const ProfilePage = () => {
                     <div className="flex items-center justify-center w-full mt-4">
                         <div className="mr-4">
                             <a href="#" className="font-semibold hover:text-gray-500">Followers: </a>
-                            <span className="text-gray-500">{userData?.followers.length}</span>
+                            <span className="text-gray-500">{userData?.countFollower}</span>
                         </div>
                         <div className="mr-4">
                             <a href="#" className="font-semibold hover:text-gray-500">Following: </a>
-                            <span className="text-gray-500">{userData?.following.length}</span>
+                            <span className="text-gray-500">{userData?.countFollowing}</span>
                         </div>
                         <div>
                             <a href="#" className="font-semibold hover:text-gray-500">Posts: </a>
