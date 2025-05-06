@@ -92,9 +92,11 @@ export const markNotificationAsReadAPI = (id) => {
 };
 
 export const markAllNotificationsAsReadAPI = (userId) => {
-    return axios.patch(`/v1/api/notifications/read-all`, {
-        params: { userId }
-    });
+    console.log(`Calling markAllNotificationsAsReadAPI with userId: ${userId}`); // Thêm log
+    if (!userId) {
+        throw new Error('userId is undefined or null');
+    }
+    return axios.patch(`/v1/api/notifications/read-all`, { userId });
 };
 
 // APIs cho Account Page
