@@ -107,9 +107,7 @@ const PostDetail = ({ open, onClose }) => {
             return;
         }
         onClose();
-        navigate(`/profile/${userId}`)
-        // dispatch(getCurrentUser({ id: userId }));
-        // dispatch(fetchPostByUser({ id: userId, page: 1, limit: 10 }));
+        navigate(`/profile/other/${userId}`)
     }
 
     const toggleMute = () => setMuted(!muted);

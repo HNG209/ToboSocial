@@ -71,7 +71,7 @@ const router = createBrowserRouter([
         ),
       },
       {
-        path: "profile/:id",
+        path: "profile/other/:id",
         element: (
           <ProfilePage />
         )
@@ -100,10 +100,10 @@ const router = createBrowserRouter([
         path: "/search",
         element: <SearchPage />
       },
-      // {
-      //   path: "/profile/:username",
-      //   element: <Profilex />
-      // }
+      {
+        path: "/profile/:username",
+        element: <Profilex />
+      }
     ],
   },
   {
