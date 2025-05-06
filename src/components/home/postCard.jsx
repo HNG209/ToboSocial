@@ -7,7 +7,7 @@ import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
 import '../../styles/home.css';
 import { useDispatch, useSelector } from 'react-redux';
-import { deleteComment, fetchComments, likeComment, unlikeComment } from '../../redux/post/postsSlice';
+import { deleteComment, fetchComments, likeComment, unlikeComment, resetComments } from '../../redux/post/postsSlice';
 import { IoIosMore } from 'react-icons/io';
 import ProfileCard from './ProfileCard ';
 import { reportPostAPI } from '../../services/report.service';
@@ -46,6 +46,7 @@ const copyToClipboard = (text) => {
 function PostCard({ post: initialPost, userId, onLikeToggle, onComment }) {
     const dispatch = useDispatch();
     const posts = useSelector((state) => state.posts.posts);
+    const status = useSelector((state) => state.posts.status);
     const post = posts.find(p => p._id === initialPost._id) || initialPost;
 
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -60,6 +61,7 @@ function PostCard({ post: initialPost, userId, onLikeToggle, onComment }) {
     const [commentText, setCommentText] = useState('');
     const [postTime, setPostTime] = useState('');
     const [commentTimes, setCommentTimes] = useState([]);
+    const [sortedComments, setSortedComments] = useState([]); // Danh sách bình luận đã sắp xếp
     const sliderRef = useRef(null);
     const commentSliderRef = useRef(null);
     const cardRef = useRef(null);
@@ -76,11 +78,15 @@ function PostCard({ post: initialPost, userId, onLikeToggle, onComment }) {
     const handleCancel = () => setIsModalOpen(false);
 
     const showCommentModal = () => {
-        dispatch(fetchComments(post._id));
+        dispatch(resetComments({ postId: post._id })); // Reset bình luận
+        dispatch(fetchComments({ postId: post._id, page: 1 })); // Tải trang đầu tiên
         setIsCommentModalOpen(true);
     };
     const handleCommentModalOk = () => setIsCommentModalOpen(false);
-    const handleCommentModalCancel = () => setIsCommentModalOpen(false);
+    const handleCommentModalCancel = () => {
+        setIsCommentModalOpen(false);
+        dispatch(resetComments({ postId: post._id })); // Reset bình luận khi đóng modal
+    };
 
     const showShareModal = () => {
         setIsShareModalVisible(true);
@@ -90,8 +96,8 @@ function PostCard({ post: initialPost, userId, onLikeToggle, onComment }) {
     };
 
     const showReportModal = () => {
-        setIsModalOpen(false); // Đóng modal chính
-        setIsReportModalOpen(true); // Mở modal báo cáo
+        setIsModalOpen(false);
+        setIsReportModalOpen(true);
     };
     const handleReportModalOk = async () => {
         if (!reportReason) {
@@ -143,6 +149,11 @@ function PostCard({ post: initialPost, userId, onLikeToggle, onComment }) {
         const shareLink = `${window.location.origin}/posts/${post._id}`;
         window.open(shareLink, '_blank');
         setIsModalOpen(false);
+    };
+
+    // Xử lý tải thêm bình luận
+    const handleLoadMoreComments = () => {
+        dispatch(fetchComments({ postId: post._id, page: post.currentCommentPage + 1 }));
     };
 
     const sliderSettings = {
@@ -202,8 +213,8 @@ function PostCard({ post: initialPost, userId, onLikeToggle, onComment }) {
     const handleCommentSubmit = () => {
         if (commentText.trim()) {
             onComment(post._id, commentText);
-            setCommentTimes([...commentTimes, '0s']);
             setCommentText('');
+            // Không cần thêm '0s' vào commentTimes ở đây, sẽ xử lý trong useEffect
         }
     };
 
@@ -217,7 +228,7 @@ function PostCard({ post: initialPost, userId, onLikeToggle, onComment }) {
             dispatch(likeComment({ postId: post._id, commentId, userId }));
         }
         setTimeout(() => {
-            dispatch(fetchComments(post._id));
+            dispatch(fetchComments({ postId: post._id, page: post.currentCommentPage }));
         }, 100);
     };
 
@@ -277,14 +288,32 @@ function PostCard({ post: initialPost, userId, onLikeToggle, onComment }) {
         setPostTime(timeAgo(post.createdAt, loadTime.current));
     }, [post]);
 
-    // Cập nhật thời gian bình luận và đồng bộ slider
+    // Sắp xếp bình luận và cập nhật thời gian
     useEffect(() => {
         if (isCommentModalOpen) {
+            // Sắp xếp bình luận:
+            // - Bình luận của userId lên đầu, sắp xếp theo thời gian (mới nhất trước)
+            // - Các bình luận khác theo thời gian (mới nhất trước)
+            const sorted = [...post.comments].sort((a, b) => {
+                if (a.user?._id === userId && b.user?._id === userId) {
+                    // Cùng là bình luận của userId, sắp xếp theo thời gian (mới nhất trước)
+                    return new Date(b.createdAt) - new Date(a.createdAt);
+                }
+                if (a.user?._id === userId && b.user?._id !== userId) return -1;
+                if (a.user?._id !== userId && b.user?._id === userId) return 1;
+                // Các bình luận khác, sắp xếp theo thời gian (mới nhất trước)
+                return new Date(b.createdAt) - new Date(a.createdAt);
+            });
+
+            setSortedComments(sorted);
+
+            // Cập nhật thời gian bình luận
             const now = new Date();
-            const updatedCommentTimes = post.comments.map(comment =>
+            const updatedCommentTimes = sorted.map(comment =>
                 timeAgo(comment.createdAt, now)
             );
             setCommentTimes(updatedCommentTimes);
+
             if (commentSliderRef.current) {
                 commentSliderRef.current.slickGoTo(currentSlide);
                 setTimeout(() => {
@@ -294,7 +323,7 @@ function PostCard({ post: initialPost, userId, onLikeToggle, onComment }) {
         } else {
             handleVideoPause(currentSlide, commentVideoRefs);
         }
-    }, [isCommentModalOpen, post.comments, currentSlide]);
+    }, [isCommentModalOpen, post.comments, currentSlide, userId]);
 
     useEffect(() => {
         const observer = new IntersectionObserver(handleVisibilityChange, {
@@ -523,7 +552,7 @@ function PostCard({ post: initialPost, userId, onLikeToggle, onComment }) {
                                 </div>
                             </div>
 
-                            {post.comments.map((comment, index) => {
+                            {sortedComments.map((comment, index) => {
                                 const isCommentLiked = comment.likes?.some(like => (like._id || like) === userId) || false;
                                 const likeCount = comment.likes?.length || 0;
                                 const isCommentOwner = comment.user?._id === userId;
@@ -578,6 +607,36 @@ function PostCard({ post: initialPost, userId, onLikeToggle, onComment }) {
                                     </div>
                                 );
                             })}
+
+                            {/* Nút Load More và trạng thái loading */}
+                            {post.hasMoreComments && (
+                                <div className="text-center mt-4">
+                                    <Button
+                                        type="link"
+                                        onClick={handleLoadMoreComments}
+                                        loading={status === 'loading'}
+                                        className="load-more-button"
+                                    >
+                                        Load more comments
+                                    </Button>
+                                </div>
+                            )}
+                            {!post.hasMoreComments && sortedComments.length > 0 && (
+                                <div className="no-more-comments">
+                                    No more comments to load
+                                </div>
+                            )}
+                            {status === 'failed' && (
+                                <div className="text-center mt-4 text-red-500">
+                                    Error loading comments
+                                    <Button
+                                        type="link"
+                                        onClick={() => dispatch(fetchComments({ postId: post._id, page: post.currentCommentPage }))}
+                                    >
+                                        Try again
+                                    </Button>
+                                </div>
+                            )}
                         </div>
 
                         <div className="p-4 border-t border-gray-200">
