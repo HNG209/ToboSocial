@@ -1,108 +1,273 @@
-import { use, useEffect, useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import { Link } from "react-router-dom";
-import { getCurrentUser, updateUser } from "../redux/profile/profileSlice";
+import React, { useState } from "react";
+import { Button, Form, Input, notification, Spin, Typography, Divider, Alert } from "antd";
+import { useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
+import {
+    LockOutlined,
+    KeyOutlined,
+    CheckCircleOutlined,
+    ArrowLeftOutlined,
+    EyeInvisibleOutlined,
+    EyeOutlined,
+} from "@ant-design/icons";
+import { IoShieldOutline } from "react-icons/io5";
+import { updateUserPasswordAPI } from "../services/admin.service";
 
-export default function ChangePassword() {
-    const dispatch = useDispatch();
+const { Title, Text, Paragraph } = Typography;
 
-    const currentUser = useSelector((state) => state.profile.user);
+const ChangePassword = () => {
+    const [form] = Form.useForm();
+    const [loading, setLoading] = useState(false);
+    const [passwordVisible, setPasswordVisible] = useState(false);
+    const [passwordStrength, setPasswordStrength] = useState(0);
+    const user = useSelector((state) => state.auth.user);
+    const navigate = useNavigate();
 
-    const [oldPassword, setOldPassword] = useState('');
-    const [newPassword, setNewPassword] = useState('');
-    const [confirmPassword, setConfirmPassword] = useState('');
+    const checkPasswordStrength = (password) => {
+        if (!password) return 0;
 
-    useEffect(() => {
-        dispatch(getCurrentUser({}));
-    }, [dispatch]);
+        let strength = 0;
+        if (password.match(/[a-z]+/)) strength += 1; // Lowercase
+        if (password.match(/[A-Z]+/)) strength += 1; // Uppercase
+        if (password.match(/[0-9]+/)) strength += 1; // Numbers
+        if (password.match(/[$@#&!]+/)) strength += 1; // Special characters
+        if (password.length >= 8) strength += 1; // Length
 
-    console.log("Current User:", currentUser);
+        return strength;
+    };
 
-    const handleOldPasswordChange = (e) => {
-        setOldPassword(e.target.value);
-    }
+    const getPasswordStrengthColor = () => {
+        if (passwordStrength <= 1) return "#ff4d4f";
+        if (passwordStrength <= 3) return "#faad14";
+        return "#52c41a";
+    };
 
-    const handleNewPasswordChange = (e) => {
-        setNewPassword(e.target.value);
-    }
+    const getPasswordStrengthText = () => {
+        if (passwordStrength <= 1) return "Weak";
+        if (passwordStrength <= 3) return "Medium";
+        return "Strong";
+    };
 
-    const handleConfirmPasswordChange = (e) => {
-        setConfirmPassword(e.target.value);
-    }
+    const handlePasswordChange = (e) => {
+        const strength = checkPasswordStrength(e.target.value);
+        setPasswordStrength(strength);
+    };
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-
-        //check if old password is correct
-        if (oldPassword !== currentUser.password) {
-            //add validation to input field
-            //show error message
-            //add red border to input field
-            document.getElementById("old-password").classList.add("border-red-500");
-            document.getElementById("old-password").classList.remove("border-gray-300");
-            document.getElementById("old-password").classList.add("focus:border-red-500");
-            document.getElementById("old-password").classList.add("focus:ring-red-500");
-            document.getElementById("old-password").classList.remove("focus:ring-blue-500");
-            document.getElementById("old-password").classList.remove("focus:ring-gray-500");
-            document.getElementById("old-password").classList.remove("focus:ring-red-500");
-
-            return;
-        }
-        //check if new password and confirm password are the same and new password must be different from old password
-        if (newPassword !== confirmPassword || newPassword === oldPassword) {
-            //add validation to input field
-            //show error message
-            //add red border to input field
-            document.getElementById("new-password").classList.add("border-red-500");
-            document.getElementById("new-password").classList.remove("border-gray-300");
-            document.getElementById("new-password").classList.add("focus:border-red-500");
-            document.getElementById("new-password").classList.add("focus:ring-red-500");
-            document.getElementById("new-password").classList.remove("focus:ring-blue-500");
-
-            return;
-        }
-
-        //check if new password is strong enough
-        const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d]{8,}$/; // At least 8 characters, 1 uppercase, 1 lowercase, 1 number
-        if (!passwordRegex.test(newPassword)) {
-            alert("New password must be at least 8 characters long, contain at least 1 uppercase letter, 1 lowercase letter and 1 number!");
+    const onFinish = async (values) => {
+        if (!user?._id) {
+            notification.error({
+                message: "Authentication Error",
+                description: "User not found. Please log in again.",
+                placement: "topRight",
+            });
+            navigate("/login");
             return;
         }
 
-        await dispatch(updateUser({
-            _id: currentUser._id,
-            password: newPassword,
-        })); // Dispatch the update action
+        setLoading(true);
+        try {
+            const data = {
+                _id: user._id,
+                currentPassword: values.currentPassword,
+                newPassword: values.newPassword,
+            };
+            console.log("Sending password update request:", data); // Debug payload
+            const response = await updateUserPasswordAPI(data);
+            console.log("API Response:", response); // Debug response
 
-        await dispatch(getCurrentUser({})); // Fetch the updated user data
-    }
+            if (response === undefined || response === null) {
+                notification.success({
+                    message: "Password Updated",
+                    description: "Your password has been successfully updated.",
+                    placement: "topRight",
+                    icon: <CheckCircleOutlined style={{ color: "#52c41a" }} />,
+                });
+                form.resetFields();
+                setPasswordStrength(0);
+                navigate("/login"); // Chuyển hướng về login
+            } else if (typeof response === "object" && response.errorCode !== undefined) {
+                if (response.errorCode === 0) {
+                    notification.success({
+                        message: "Password Updated",
+                        description: "Your password has been successfully updated.",
+                        placement: "topRight",
+                        icon: <CheckCircleOutlined style={{ color: "#52c41a" }} />,
+                    });
+                    form.resetFields();
+                    setPasswordStrength(0);
+                    navigate("/login"); // Chuyển hướng về login
+                } else {
+                    throw new Error(response.message || "Failed to update password");
+                }
+            } else {
+                throw new Error("Invalid response from server");
+            }
+        } catch (error) {
+            console.error("Password update error:", error); // Debug lỗi
+            const errorMessage = typeof error === "object" && error.message ? error.message : "Failed to update password. Please try again.";
+            notification.error({
+                message: "Update Failed",
+                description:
+                    errorMessage === "Current password is incorrect"
+                        ? "The current password you entered is incorrect."
+                        : errorMessage === "User not found"
+                            ? "User account not found. Please log in again."
+                            : errorMessage,
+                placement: "topRight",
+            });
+            if (errorMessage === "User not found") {
+                navigate("/login");
+            }
+        } finally {
+            setLoading(false);
+        }
+    };
 
     return (
-        <>
-            <div className="flex flex-col items-center justify-center h-screen bg-gray-100">
-                <div className="bg-white p-6 rounded-lg shadow-md w-full max-w-md">
-                    <h2 className="text-2xl font-bold text-center mb-4">Change Password</h2>
-                    <form>
-                        <div className="mb-4">
-                            <label htmlFor="old-password" className="block text-sm font-medium text-gray-700">Old Password</label>
-                            <input onChange={handleOldPasswordChange} type="password" id="old-password" className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 p-2" required />
-                        </div>
-                        <div className="mb-4">
-                            <label htmlFor="new-password" className="block text-sm font-medium text-gray-700">New Password</label>
-                            <input onChange={handleNewPasswordChange} type="password" id="new-password" className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 p-2" required />
-                        </div>
-                        <div className="mb-4">
-                            <label htmlFor="confirm-password" className="block text-sm font-medium text-gray-700">Confirm New Password</label>
-                            <input onChange={handleConfirmPasswordChange} type="password" id="confirm-password" className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 p-2" required />
-                        </div>
+        <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 flex items-center justify-center p-4">
+            <div className="w-full max-w-md bg-white rounded-xl shadow-lg p-8 transform transition-all duration-300 hover:shadow-xl border border-gray-100">
+                <div className="flex items-center justify-center mb-6">
+                    <IoShieldOutline style={{ fontSize: 36, color: "#1890ff", marginRight: 12 }} />
+                    <Title level={2} style={{ margin: 0, color: "#1890ff" }}>
+                        Change Password
+                    </Title>
+                </div>
 
-                        <button onClick={handleSubmit} type="submit" className="w-full bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600">Change Password</button>
-                        <div className="mt-4 text-center">
-                            <Link to="/profile" className="text-blue-500 hover:text-blue-700">Back to Profile</Link>
-                        </div>
-                    </form>
+                <Paragraph className="text-gray-500 text-center mb-6">
+                    Create a strong password to keep your account secure
+                </Paragraph>
+
+                <Divider />
+
+                <Form
+                    form={form}
+                    onFinish={onFinish}
+                    layout="vertical"
+                    requiredMark={false}
+                    initialValues={{ currentPassword: "", newPassword: "", confirmPassword: "" }}
+                >
+                    <Form.Item
+                        label={<Text strong>Current Password</Text>}
+                        name="currentPassword"
+                        rules={[{ required: true, message: "Please enter your current password" }]}
+                    >
+                        <Input.Password
+                            prefix={<LockOutlined className="site-form-item-icon" style={{ color: "#bfbfbf" }} />}
+                            placeholder="Enter current password"
+                            size="large"
+                            className="rounded-lg"
+                            iconRender={(visible) => (visible ? <EyeOutlined /> : <EyeInvisibleOutlined />)}
+                        />
+                    </Form.Item>
+
+                    <Divider dashed className="my-4" />
+
+                    <Form.Item
+                        label={<Text strong>New Password</Text>}
+                        name="newPassword"
+                        rules={[
+                            { required: true, message: "Please enter your new password" },
+                            { min: 6, message: "Password must be at least 6 characters" },
+                        ]}
+                        help={
+                            form.getFieldValue("newPassword") ? (
+                                <div className="mt-2">
+                                    <div className="flex items-center justify-between mb-1">
+                                        <Text>Password strength:</Text>
+                                        <Text style={{ color: getPasswordStrengthColor() }}>
+                                            {getPasswordStrengthText()}
+                                        </Text>
+                                    </div>
+                                    <div className="w-full bg-gray-200 rounded-full h-2">
+                                        <div
+                                            className="h-2 rounded-full transition-all duration-300"
+                                            style={{
+                                                width: `${(passwordStrength / 5) * 100}%`,
+                                                backgroundColor: getPasswordStrengthColor(),
+                                            }}
+                                        ></div>
+                                    </div>
+                                </div>
+                            ) : null
+                        }
+                    >
+                        <Input.Password
+                            prefix={<KeyOutlined className="site-form-item-icon" style={{ color: "#bfbfbf" }} />}
+                            placeholder="Enter new password"
+                            size="large"
+                            className="rounded-lg"
+                            onChange={handlePasswordChange}
+                            iconRender={(visible) => (visible ? <EyeOutlined /> : <EyeInvisibleOutlined />)}
+                        />
+                    </Form.Item>
+
+                    <Form.Item
+                        label={<Text strong>Confirm New Password</Text>}
+                        name="confirmPassword"
+                        dependencies={["newPassword"]}
+                        rules={[
+                            { required: true, message: "Please confirm your new password" },
+                            ({ getFieldValue }) => ({
+                                validator(_, value) {
+                                    if (!value || getFieldValue("newPassword") === value) {
+                                        return Promise.resolve();
+                                    }
+                                    return Promise.reject(new Error("Passwords do not match"));
+                                },
+                            }),
+                        ]}
+                    >
+                        <Input.Password
+                            prefix={<KeyOutlined className="site-form-item-icon" style={{ color: "#bfbfbf" }} />}
+                            placeholder="Confirm new password"
+                            size="large"
+                            className="rounded-lg"
+                            iconRender={(visible) => (visible ? <EyeOutlined /> : <EyeInvisibleOutlined />)}
+                        />
+                    </Form.Item>
+
+                    {passwordStrength >= 4 && (
+                        <Alert
+                            message="Strong password"
+                            description="Your password is secure and meets all requirements."
+                            type="success"
+                            showIcon
+                            className="mb-4"
+                        />
+                    )}
+
+                    <Form.Item>
+                        <Button
+                            type="primary"
+                            htmlType="submit"
+                            loading={loading}
+                            block
+                            size="large"
+                            className="bg-blue-600 hover:bg-blue-700 h-12 rounded-lg font-semibold text-base"
+                            disabled={loading}
+                        >
+                            {loading ? <Spin size="small" /> : "Update Password"}
+                        </Button>
+                    </Form.Item>
+                </Form>
+
+                <Button
+                    onClick={() => navigate(-1)}
+                    className="w-full mt-4 border-gray-300 text-gray-700 hover:text-gray-900 hover:border-gray-400 rounded-lg h-12 flex items-center justify-center"
+                    size="large"
+                    icon={<ArrowLeftOutlined />}
+                >
+                    Back to Profile
+                </Button>
+
+                <div className="mt-6 pt-6 border-t border-gray-100">
+                    <Paragraph className="text-gray-500 text-sm text-center">
+                        For security reasons, you'll be asked to log in again after changing your password.
+                    </Paragraph>
                 </div>
             </div>
-        </>
-    )
-}
+        </div>
+    );
+};
+
+export default ChangePassword;
