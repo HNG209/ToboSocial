@@ -32,6 +32,7 @@ import AccountPage from "./pages/admin/AccountPage";
 import { ConfigProvider, App as AntdApp } from 'antd';
 import AdminRoute from "./pages/client/auth/AdminRoute";
 import PrivateRoute from "./pages/client/auth/PrivateRoute";
+import CreatePost from "./pages/client/CreatePost";
 
 
 
@@ -99,6 +100,10 @@ const router = createBrowserRouter([
       {
         path: "/profile/:username",
         element: <Profilex />
+      },
+      {
+        path: "/create",
+        element: <PrivateRoute> <CreatePost /></PrivateRoute>
       }
     ],
   },
