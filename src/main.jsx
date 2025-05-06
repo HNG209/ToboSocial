@@ -30,6 +30,8 @@ import ReportManagement from "./pages/admin/ReportManagement";
 import NotificationPage from "./pages/client/NotificationPage";
 import AccountPage from "./pages/admin/AccountPage";
 import { ConfigProvider, App as AntdApp } from 'antd';
+import AdminRoute from "./pages/client/auth/AdminRoute";
+import PrivateRoute from "./pages/client/auth/PrivateRoute";
 
 
 
@@ -46,7 +48,7 @@ const router = createBrowserRouter([
       },
       {
         path: "/explore",
-        element: <ExplorePage />,
+        element: <PrivateRoute><ExplorePage /></PrivateRoute>,
       },
       {
         path: "/reels",
@@ -54,7 +56,7 @@ const router = createBrowserRouter([
       },
       {
         path: "/notifications",
-        element: <NotificationPage />,
+        element: <PrivateRoute><NotificationPage /></PrivateRoute>,
       },
       {
         path: "/messages",
@@ -65,9 +67,9 @@ const router = createBrowserRouter([
       {
         path: "/profile",
         element: (
-          // <PrivateRoute>
-          <ProfilePage />
-          // </PrivateRoute>
+          <PrivateRoute>
+            <ProfilePage />
+          </PrivateRoute>
         ),
       },
       {
@@ -79,17 +81,17 @@ const router = createBrowserRouter([
       {
         path: "/edit-profile",
         element: (
-          // <PrivateRoute>
-          <ProfileEditPage />
-          // </PrivateRoute>
+          <PrivateRoute>
+            <ProfileEditPage />
+          </PrivateRoute>
         ),
       },
       {
         path: "change-password",
         element: (
-          // <PrivateRoute>
-          <ChangePassword />
-          // </PrivateRoute>
+          <PrivateRoute>
+            <ChangePassword />
+          </PrivateRoute>
         ),
       },
       {
@@ -98,7 +100,7 @@ const router = createBrowserRouter([
       },
       {
         path: "/search",
-        element: <SearchPage />
+        element: <PrivateRoute><SearchPage /></PrivateRoute>
       },
       {
         path: "/profile/:username",
@@ -120,7 +122,7 @@ const router = createBrowserRouter([
   },
   {
     path: "/admin",
-    element: <AdminLayout />,
+    element: <AdminRoute><AdminLayout /></AdminRoute>,
     children: [
       {
         index: true,

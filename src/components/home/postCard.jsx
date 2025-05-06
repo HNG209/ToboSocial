@@ -2,12 +2,13 @@ import { Card, Avatar, Modal, Button, Input, Menu, Dropdown, notification, Selec
 import { BarsOutlined, HeartOutlined, HeartFilled, MessageOutlined, SendOutlined, UserOutlined, LeftOutlined, RightOutlined, SoundOutlined, AudioMutedOutlined } from '@ant-design/icons';
 import { FiBookmark } from 'react-icons/fi';
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 import Slider from 'react-slick';
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
 import '../../styles/home.css';
 import { useDispatch, useSelector } from 'react-redux';
-import { deleteComment, fetchComments, likeComment, unlikeComment } from '../../redux/post/postsSlice';
+import { deleteComment, fetchComments, likeComment, unlikeComment, resetComments } from '../../redux/post/postsSlice';
 import { IoIosMore } from 'react-icons/io';
 import ProfileCard from './ProfileCard ';
 import { reportPostAPI } from '../../services/report.service';
@@ -45,7 +46,9 @@ const copyToClipboard = (text) => {
 
 function PostCard({ post: initialPost, userId, onLikeToggle, onComment }) {
     const dispatch = useDispatch();
+    const navigate = useNavigate();
     const posts = useSelector((state) => state.posts.posts);
+    const status = useSelector((state) => state.posts.status);
     const post = posts.find(p => p._id === initialPost._id) || initialPost;
 
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -60,6 +63,7 @@ function PostCard({ post: initialPost, userId, onLikeToggle, onComment }) {
     const [commentText, setCommentText] = useState('');
     const [postTime, setPostTime] = useState('');
     const [commentTimes, setCommentTimes] = useState([]);
+    const [sortedComments, setSortedComments] = useState([]); // Danh sách bình luận đã sắp xếp
     const sliderRef = useRef(null);
     const commentSliderRef = useRef(null);
     const cardRef = useRef(null);
@@ -76,11 +80,15 @@ function PostCard({ post: initialPost, userId, onLikeToggle, onComment }) {
     const handleCancel = () => setIsModalOpen(false);
 
     const showCommentModal = () => {
-        dispatch(fetchComments(post._id));
+        dispatch(resetComments({ postId: post._id })); // Reset bình luận
+        dispatch(fetchComments({ postId: post._id, page: 1 })); // Tải trang đầu tiên
         setIsCommentModalOpen(true);
     };
     const handleCommentModalOk = () => setIsCommentModalOpen(false);
-    const handleCommentModalCancel = () => setIsCommentModalOpen(false);
+    const handleCommentModalCancel = () => {
+        setIsCommentModalOpen(false);
+        dispatch(resetComments({ postId: post._id })); // Reset bình luận khi đóng modal
+    };
 
     const showShareModal = () => {
         setIsShareModalVisible(true);
@@ -90,10 +98,42 @@ function PostCard({ post: initialPost, userId, onLikeToggle, onComment }) {
     };
 
     const showReportModal = () => {
-        setIsModalOpen(false); // Đóng modal chính
-        setIsReportModalOpen(true); // Mở modal báo cáo
+        setIsModalOpen(false);
+        setIsReportModalOpen(true);
     };
+
+    const showLoginNotification = () => {
+        notification.warning({
+            message: 'Authentication Required',
+            description: 'Please log in to interact with posts, or continue viewing without interaction.',
+            placement: 'topRight',
+            duration: 0, // Keep notification open until user interacts
+            btn: (
+                <div className="flex gap-2">
+                    <Button
+                        type="primary"
+                        onClick={() => {
+                            notification.destroy();
+                            navigate('/login');
+                        }}
+                    >
+                        Log In
+                    </Button>
+                    <Button
+                        onClick={() => notification.destroy()}
+                    >
+                        Continue Viewing
+                    </Button>
+                </div>
+            ),
+        });
+    };
+
     const handleReportModalOk = async () => {
+        if (!userId) {
+            showLoginNotification();
+            return;
+        }
         if (!reportReason) {
             notification.error({
                 message: 'Report Failed',
@@ -143,6 +183,11 @@ function PostCard({ post: initialPost, userId, onLikeToggle, onComment }) {
         const shareLink = `${window.location.origin}/posts/${post._id}`;
         window.open(shareLink, '_blank');
         setIsModalOpen(false);
+    };
+
+    // Xử lý tải thêm bình luận
+    const handleLoadMoreComments = () => {
+        dispatch(fetchComments({ postId: post._id, page: post.currentCommentPage + 1 }));
     };
 
     const sliderSettings = {
@@ -196,19 +241,31 @@ function PostCard({ post: initialPost, userId, onLikeToggle, onComment }) {
     const handleNext = (ref = sliderRef) => ref.current.slickNext();
 
     const handleLikeClick = () => {
+        if (!userId) {
+            showLoginNotification();
+            return;
+        }
         onLikeToggle(post._id, isLiked);
     };
 
     const handleCommentSubmit = () => {
+        if (!userId) {
+            showLoginNotification();
+            return;
+        }
         if (commentText.trim()) {
             onComment(post._id, commentText);
-            setCommentTimes([...commentTimes, '0s']);
             setCommentText('');
+            // Không cần thêm '0s' vào commentTimes ở đây, sẽ xử lý trong useEffect
         }
     };
 
     // Xử lý like/unlike comment
     const handleLikeComment = (commentId) => {
+        if (!userId) {
+            showLoginNotification();
+            return;
+        }
         const comment = post.comments.find(c => c._id === commentId);
         const isCommentLiked = comment?.likes?.some(like => (like._id || like) === userId) || false;
         if (isCommentLiked) {
@@ -217,12 +274,16 @@ function PostCard({ post: initialPost, userId, onLikeToggle, onComment }) {
             dispatch(likeComment({ postId: post._id, commentId, userId }));
         }
         setTimeout(() => {
-            dispatch(fetchComments(post._id));
+            dispatch(fetchComments({ postId: post._id, page: post.currentCommentPage }));
         }, 100);
     };
 
     // Xử lý xóa bình luận
     const handleDeleteComment = (commentId) => {
+        if (!userId) {
+            showLoginNotification();
+            return;
+        }
         dispatch(deleteComment({ postId: post._id, commentId }));
     };
 
@@ -277,14 +338,32 @@ function PostCard({ post: initialPost, userId, onLikeToggle, onComment }) {
         setPostTime(timeAgo(post.createdAt, loadTime.current));
     }, [post]);
 
-    // Cập nhật thời gian bình luận và đồng bộ slider
+    // Sắp xếp bình luận và cập nhật thời gian
     useEffect(() => {
         if (isCommentModalOpen) {
+            // Sắp xếp bình luận:
+            // - Bình luận của userId lên đầu, sắp xếp theo thời gian (mới nhất trước)
+            // - Các bình luận khác theo thời gian (mới nhất trước)
+            const sorted = [...post.comments].sort((a, b) => {
+                if (a.user?._id === userId && b.user?._id === userId) {
+                    // Cùng là bình luận của userId, sắp xếp theo thời gian (mới nhất trước)
+                    return new Date(b.createdAt) - new Date(a.createdAt);
+                }
+                if (a.user?._id === userId && b.user?._id !== userId) return -1;
+                if (a.user?._id !== userId && b.user?._id === userId) return 1;
+                // Các bình luận khác, sắp xếp theo thời gian (mới nhất trước)
+                return new Date(b.createdAt) - new Date(a.createdAt);
+            });
+
+            setSortedComments(sorted);
+
+            // Cập nhật thời gian bình luận
             const now = new Date();
-            const updatedCommentTimes = post.comments.map(comment =>
+            const updatedCommentTimes = sorted.map(comment =>
                 timeAgo(comment.createdAt, now)
             );
             setCommentTimes(updatedCommentTimes);
+
             if (commentSliderRef.current) {
                 commentSliderRef.current.slickGoTo(currentSlide);
                 setTimeout(() => {
@@ -294,7 +373,7 @@ function PostCard({ post: initialPost, userId, onLikeToggle, onComment }) {
         } else {
             handleVideoPause(currentSlide, commentVideoRefs);
         }
-    }, [isCommentModalOpen, post.comments, currentSlide]);
+    }, [isCommentModalOpen, post.comments, currentSlide, userId]);
 
     useEffect(() => {
         const observer = new IntersectionObserver(handleVisibilityChange, {
@@ -313,8 +392,9 @@ function PostCard({ post: initialPost, userId, onLikeToggle, onComment }) {
         commentVideoRefs.current = [];
     }, [post]);
 
-    // Xử lý hover cho ProfileCard
+    // Xử lý hover cho ProfileCard (chỉ khi đã đăng nhập)
     const handleMouseEnter = () => {
+        if (!userId) return; // Không hiển thị ProfileCard nếu chưa đăng nhập
         if (profileCardTimeoutRef.current) {
             clearTimeout(profileCardTimeoutRef.current);
         }
@@ -322,6 +402,7 @@ function PostCard({ post: initialPost, userId, onLikeToggle, onComment }) {
     };
 
     const handleMouseLeave = () => {
+        if (!userId) return; // Không cần xử lý nếu chưa đăng nhập
         profileCardTimeoutRef.current = setTimeout(() => {
             setShowProfileCard(false);
         }, 200);
@@ -346,7 +427,12 @@ function PostCard({ post: initialPost, userId, onLikeToggle, onComment }) {
                             onMouseEnter={handleMouseEnter}
                             onMouseLeave={handleMouseLeave}
                         >
-                            <span className="font-semibold text-black cursor-pointer">{post.author?.username}</span>
+                            <Link
+                                to={`/profile/${post.author?.username}`}
+                                className="font-semibold text-black hover:underline cursor-pointer"
+                            >
+                                {post.author?.username}
+                            </Link>
                             {showProfileCard && (
                                 <div
                                     className="absolute z-50 top-6 left-0"
@@ -501,7 +587,12 @@ function PostCard({ post: initialPost, userId, onLikeToggle, onComment }) {
                                 size={32}
                             />
                             <div className="ml-3 flex flex-col">
-                                <span className="font-semibold text-black">{post.author?.username || `user${post.author?._id}`}</span>
+                                <Link
+                                    to={`/profile/${post.author?.username}`}
+                                    className="font-semibold text-black hover:underline cursor-pointer"
+                                >
+                                    {post.author?.username || `user${post.author?._id}`}
+                                </Link>
                                 <span className="text-xs text-gray-400">{postTime}</span>
                             </div>
                         </div>
@@ -523,7 +614,7 @@ function PostCard({ post: initialPost, userId, onLikeToggle, onComment }) {
                                 </div>
                             </div>
 
-                            {post.comments.map((comment, index) => {
+                            {sortedComments.map((comment, index) => {
                                 const isCommentLiked = comment.likes?.some(like => (like._id || like) === userId) || false;
                                 const likeCount = comment.likes?.length || 0;
                                 const isCommentOwner = comment.user?._id === userId;
@@ -578,6 +669,36 @@ function PostCard({ post: initialPost, userId, onLikeToggle, onComment }) {
                                     </div>
                                 );
                             })}
+
+                            {/* Nút Load More và trạng thái loading */}
+                            {post.hasMoreComments && (
+                                <div className="text-center mt-4">
+                                    <Button
+                                        type="link"
+                                        onClick={handleLoadMoreComments}
+                                        loading={status === 'loading'}
+                                        className="load-more-button"
+                                    >
+                                        Load more comments
+                                    </Button>
+                                </div>
+                            )}
+                            {!post.hasMoreComments && sortedComments.length > 0 && (
+                                <div className="no-more-comments">
+                                    No more comments to load
+                                </div>
+                            )}
+                            {status === 'failed' && (
+                                <div className="text-center mt-4 text-red-500">
+                                    Error loading comments
+                                    <Button
+                                        type="link"
+                                        onClick={() => dispatch(fetchComments({ postId: post._id, page: post.currentCommentPage }))}
+                                    >
+                                        Try again
+                                    </Button>
+                                </div>
+                            )}
                         </div>
 
                         <div className="p-4 border-t border-gray-200">

@@ -1,24 +1,24 @@
 import { useParams, Link } from "react-router-dom";
 import { useEffect, useState } from "react";
+import { useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
 import { getUserByUsernameAPI, getUserPostsAPI, followUserAPI, unfollowUserAPI } from "../../services/user.service";
-import { Tabs, Avatar, Button } from "antd";
+import { Tabs, Avatar, Button, notification } from "antd";
 import { UserOutlined } from "@ant-design/icons";
 
 const Profilex = () => {
     const { username } = useParams();
+    const navigate = useNavigate();
     const [user, setUser] = useState(null); // Người dùng trong hồ sơ
     const [posts, setPosts] = useState([]);
     const [loadingPosts, setLoadingPosts] = useState(false);
     const [activeTab, setActiveTab] = useState("posts");
     const [page, setPage] = useState(1);
     const [loadingFollow, setLoadingFollow] = useState(false); // Trạng thái tải cho follow/unfollow
-    const [error, setError] = useState(null); // Lưu lỗi nếu có
     const limit = 9;
 
-    // Lấy thông tin người dùng hiện tại từ localStorage
-    const currentUser = localStorage.getItem('user')
-        ? JSON.parse(localStorage.getItem('user'))
-        : null;
+    // Lấy thông tin người dùng hiện tại từ Redux
+    const currentUser = useSelector((state) => state.auth.user);
 
     // Lấy thông tin người dùng trong hồ sơ
     useEffect(() => {
@@ -28,7 +28,6 @@ const Profilex = () => {
                 setUser(res); // Giả sử API trả về { data: {...} }
             } catch (err) {
                 console.error("Lỗi lấy người dùng theo username:", err);
-                setError("Không thể tải hồ sơ người dùng.");
             }
         };
 
@@ -58,15 +57,42 @@ const Profilex = () => {
     // Kiểm tra trạng thái theo dõi
     const isFollowing = currentUser?.following?.includes(user?._id);
 
+    // Hiển thị thông báo khi chưa đăng nhập
+    const showLoginNotification = () => {
+        notification.warning({
+            message: 'Authentication Required',
+            description: 'Please log in to follow users, or continue viewing without interaction.',
+            placement: 'topRight',
+            duration: 0, // Keep notification open until user interacts
+            btn: (
+                <div className="flex gap-2">
+                    <Button
+                        type="primary"
+                        onClick={() => {
+                            notification.destroy();
+                            navigate('/login');
+                        }}
+                    >
+                        Log In
+                    </Button>
+                    <Button
+                        onClick={() => notification.destroy()}
+                    >
+                        Continue Viewing
+                    </Button>
+                </div>
+            ),
+        });
+    };
+
     // Xử lý follow/unfollow
     const handleFollow = async () => {
         if (!currentUser || !user) {
-            setError("Vui lòng đăng nhập để thực hiện hành động này.");
+            showLoginNotification();
             return;
         }
 
         setLoadingFollow(true);
-        setError(null);
 
         try {
             const payload = { targetUserId: user._id, currentUserId: currentUser._id };
@@ -78,15 +104,16 @@ const Profilex = () => {
                 response = await followUserAPI(user._id, currentUser._id);
             }
 
-            // Cập nhật localStorage với thông tin người dùng mới
-            localStorage.setItem('user', JSON.stringify(response.user));
-
             // Làm mới thông tin hồ sơ để cập nhật số lượng followers/following
             const updatedProfile = await getUserByUsernameAPI(username);
             setUser(updatedProfile);
         } catch (err) {
             console.error("Lỗi khi follow/unfollow:", err);
-            setError(err.message || "Không thể thực hiện hành động này.");
+            notification.error({
+                message: 'Error',
+                description: err.message || 'Không thể thực hiện hành động này.',
+                placement: 'topRight',
+            });
         } finally {
             setLoadingFollow(false);
         }
@@ -154,13 +181,11 @@ const Profilex = () => {
                                 className={`rounded ${isFollowing ? "bg-gray-500 hover:bg-gray-600" : "bg-blue-500 hover:bg-blue-600"} border-none`}
                                 onClick={handleFollow}
                                 loading={loadingFollow}
-                                disabled={!currentUser}
                             >
                                 {isFollowing ? "Unfollow" : "Follow"}
                             </Button>
                         )}
                     </div>
-                    {error && <p className="text-red-500 mb-4">{error}</p>}
                     <div className="flex gap-6 mb-4">
                         <div>
                             <span className="font-semibold">{user.postCount || posts.length || 0}</span> posts

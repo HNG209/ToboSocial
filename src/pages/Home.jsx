@@ -1,22 +1,76 @@
-import { useEffect } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
+import { notification, Button } from 'antd';
 import PostCard from '../components/home/postCard';
-import Stories from '../components/home/stories';
-import { fetchPosts, likePost, unlikePost, createComment } from '../redux/post/postsSlice';
+import { fetchPosts, likePost, unlikePost, createComment, resetPosts } from '../redux/post/postsSlice';
 
 function Home() {
     const dispatch = useDispatch();
+    const navigate = useNavigate();
     const posts = useSelector((state) => state.posts.posts);
     const status = useSelector((state) => state.posts.status);
-    const userId = "662b00000000000000000005";
+    const currentPage = useSelector((state) => state.posts.currentPage);
+    const hasMore = useSelector((state) => state.posts.hasMore);
+    const userId = useSelector((state) => state.auth.user?._id);
+
+    const observer = useRef();
+
+    // Callback for Intersection Observer
+    const lastPostElementRef = useCallback(
+        (node) => {
+            if (status === 'loading') return;
+            if (observer.current) observer.current.disconnect();
+
+            observer.current = new IntersectionObserver((entries) => {
+                if (entries[0].isIntersecting && hasMore) {
+                    dispatch(fetchPosts({ page: currentPage + 1 }));
+                }
+            });
+
+            if (node) observer.current.observe(node);
+        },
+        [status, hasMore, currentPage, dispatch]
+    );
 
     useEffect(() => {
-        if (status === 'idle') {
-            dispatch(fetchPosts());
-        }
-    }, [dispatch, status]);
+        // Reset posts and fetch initial page
+        dispatch(resetPosts());
+        dispatch(fetchPosts({ page: 1 }));
+    }, [dispatch]);
+
+    const showLoginNotification = () => {
+        notification.warning({
+            message: 'Authentication Required',
+            description: 'Please log in to interact with posts, or continue viewing without interaction.',
+            placement: 'topRight',
+            duration: 0, // Keep notification open until user interacts
+            btn: (
+                <div className="flex gap-2">
+                    <Button
+                        type="primary"
+                        onClick={() => {
+                            notification.destroy();
+                            navigate('/login');
+                        }}
+                    >
+                        Log In
+                    </Button>
+                    <Button
+                        onClick={() => notification.destroy()}
+                    >
+                        Continue Viewing
+                    </Button>
+                </div>
+            ),
+        });
+    };
 
     const handleLikeToggle = (postId, isLiked) => {
+        if (!userId) {
+            showLoginNotification();
+            return;
+        }
         if (isLiked) {
             dispatch(unlikePost({ postId, userId }));
         } else {
@@ -25,53 +79,45 @@ function Home() {
     };
 
     const handleComment = (postId, text) => {
+        if (!userId) {
+            showLoginNotification();
+            return;
+        }
         dispatch(createComment({ postId, userId, text }));
     };
 
     return (
         <div className="flex justify-center bg-white">
             <div className="w-full max-w-[630px] border-x border-gray-200 min-h-screen">
-                <Stories />
-                {status === 'loading' && <p>Loading posts...</p>}
-                {status === 'succeeded' &&
-                    posts.map(post => (
-                        <PostCard
-                            key={post._id}
-                            post={post}
-                            userId={userId}
-                            onLikeToggle={handleLikeToggle}
-                            onComment={handleComment}
-                        />
-                    ))}
-                {status === 'failed' && <p>Error loading posts</p>}
-            </div>
-            <div className="hidden lg:block w-[320px] px-6 py-8">
-                <div className="flex items-center justify-between mb-6">
-                    <div className="flex items-center">
-                        <img className="w-12 h-12 rounded-full" src="https://i.pravatar.cc/150?img=12" alt="profile" />
-                        <div className="ml-3">
-                            <div className="font-semibold">ph_g</div>
-                            <div className="text-gray-500 text-sm">Huỳnh Phương</div>
-                        </div>
-                    </div>
-                    <button className="text-blue-500 font-semibold">Switch</button>
-                </div>
-                <div className="flex justify-between mb-3">
-                    <span className="text-sm text-gray-500 font-semibold">Suggested for you</span>
-                    <button className="text-xs font-semibold">See All</button>
-                </div>
-                {Array(5).fill(0).map((_, i) => (
-                    <div key={i} className="flex justify-between items-center mb-4">
-                        <div className="flex items-center">
-                            <img className="w-8 h-8 rounded-full" src={`https://i.pravatar.cc/150?img=${i + 20}`} alt="suggested user" />
-                            <div className="ml-2 text-sm">
-                                <div className="font-semibold">user_suggest_{i + 1}</div>
-                                <div className="text-gray-500 text-xs">Suggested for you</div>
-                            </div>
-                        </div>
-                        <button className="text-xs text-blue-500 font-semibold">Follow</button>
-                    </div>
-                ))}
+                {status === 'loading' && posts.length === 0 && <p className="loading">Loading posts...</p>}
+                {posts.length > 0 &&
+                    posts.map((post, index) => {
+                        // Attach ref to the last post for Intersection Observer
+                        if (index === posts.length - 1) {
+                            return (
+                                <div ref={lastPostElementRef} key={post._id}>
+                                    <PostCard
+                                        post={post}
+                                        userId={userId}
+                                        onLikeToggle={handleLikeToggle}
+                                        onComment={handleComment}
+                                    />
+                                </div>
+                            );
+                        }
+                        return (
+                            <PostCard
+                                key={post._id}
+                                post={post}
+                                userId={userId}
+                                onLikeToggle={handleLikeToggle}
+                                onComment={handleComment}
+                            />
+                        );
+                    })}
+                {status === 'loading' && posts.length > 0 && <p className="loading">Loading more posts...</p>}
+                {status === 'failed' && <p className="error">Error loading posts</p>}
+                {!hasMore && posts.length > 0 && <p className="loading">No more posts to load</p>}
             </div>
         </div>
     );
