@@ -2,6 +2,7 @@ import { Card, Avatar, Modal, Button, Input, Menu, Dropdown, notification, Selec
 import { BarsOutlined, HeartOutlined, HeartFilled, MessageOutlined, SendOutlined, UserOutlined, LeftOutlined, RightOutlined, SoundOutlined, AudioMutedOutlined } from '@ant-design/icons';
 import { FiBookmark } from 'react-icons/fi';
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 import Slider from 'react-slick';
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
@@ -45,6 +46,7 @@ const copyToClipboard = (text) => {
 
 function PostCard({ post: initialPost, userId, onLikeToggle, onComment }) {
     const dispatch = useDispatch();
+    const navigate = useNavigate();
     const posts = useSelector((state) => state.posts.posts);
     const status = useSelector((state) => state.posts.status);
     const post = posts.find(p => p._id === initialPost._id) || initialPost;
@@ -99,7 +101,39 @@ function PostCard({ post: initialPost, userId, onLikeToggle, onComment }) {
         setIsModalOpen(false);
         setIsReportModalOpen(true);
     };
+
+    const showLoginNotification = () => {
+        notification.warning({
+            message: 'Authentication Required',
+            description: 'Please log in to interact with posts, or continue viewing without interaction.',
+            placement: 'topRight',
+            duration: 0, // Keep notification open until user interacts
+            btn: (
+                <div className="flex gap-2">
+                    <Button
+                        type="primary"
+                        onClick={() => {
+                            notification.destroy();
+                            navigate('/login');
+                        }}
+                    >
+                        Log In
+                    </Button>
+                    <Button
+                        onClick={() => notification.destroy()}
+                    >
+                        Continue Viewing
+                    </Button>
+                </div>
+            ),
+        });
+    };
+
     const handleReportModalOk = async () => {
+        if (!userId) {
+            showLoginNotification();
+            return;
+        }
         if (!reportReason) {
             notification.error({
                 message: 'Report Failed',
@@ -207,10 +241,18 @@ function PostCard({ post: initialPost, userId, onLikeToggle, onComment }) {
     const handleNext = (ref = sliderRef) => ref.current.slickNext();
 
     const handleLikeClick = () => {
+        if (!userId) {
+            showLoginNotification();
+            return;
+        }
         onLikeToggle(post._id, isLiked);
     };
 
     const handleCommentSubmit = () => {
+        if (!userId) {
+            showLoginNotification();
+            return;
+        }
         if (commentText.trim()) {
             onComment(post._id, commentText);
             setCommentText('');
@@ -220,6 +262,10 @@ function PostCard({ post: initialPost, userId, onLikeToggle, onComment }) {
 
     // Xử lý like/unlike comment
     const handleLikeComment = (commentId) => {
+        if (!userId) {
+            showLoginNotification();
+            return;
+        }
         const comment = post.comments.find(c => c._id === commentId);
         const isCommentLiked = comment?.likes?.some(like => (like._id || like) === userId) || false;
         if (isCommentLiked) {
@@ -234,6 +280,10 @@ function PostCard({ post: initialPost, userId, onLikeToggle, onComment }) {
 
     // Xử lý xóa bình luận
     const handleDeleteComment = (commentId) => {
+        if (!userId) {
+            showLoginNotification();
+            return;
+        }
         dispatch(deleteComment({ postId: post._id, commentId }));
     };
 
@@ -342,8 +392,9 @@ function PostCard({ post: initialPost, userId, onLikeToggle, onComment }) {
         commentVideoRefs.current = [];
     }, [post]);
 
-    // Xử lý hover cho ProfileCard
+    // Xử lý hover cho ProfileCard (chỉ khi đã đăng nhập)
     const handleMouseEnter = () => {
+        if (!userId) return; // Không hiển thị ProfileCard nếu chưa đăng nhập
         if (profileCardTimeoutRef.current) {
             clearTimeout(profileCardTimeoutRef.current);
         }
@@ -351,6 +402,7 @@ function PostCard({ post: initialPost, userId, onLikeToggle, onComment }) {
     };
 
     const handleMouseLeave = () => {
+        if (!userId) return; // Không cần xử lý nếu chưa đăng nhập
         profileCardTimeoutRef.current = setTimeout(() => {
             setShowProfileCard(false);
         }, 200);
@@ -375,7 +427,12 @@ function PostCard({ post: initialPost, userId, onLikeToggle, onComment }) {
                             onMouseEnter={handleMouseEnter}
                             onMouseLeave={handleMouseLeave}
                         >
-                            <span className="font-semibold text-black cursor-pointer">{post.author?.username}</span>
+                            <Link
+                                to={`/profile/${post.author?.username}`}
+                                className="font-semibold text-black hover:underline cursor-pointer"
+                            >
+                                {post.author?.username}
+                            </Link>
                             {showProfileCard && (
                                 <div
                                     className="absolute z-50 top-6 left-0"
@@ -530,7 +587,12 @@ function PostCard({ post: initialPost, userId, onLikeToggle, onComment }) {
                                 size={32}
                             />
                             <div className="ml-3 flex flex-col">
-                                <span className="font-semibold text-black">{post.author?.username || `user${post.author?._id}`}</span>
+                                <Link
+                                    to={`/profile/${post.author?.username}`}
+                                    className="font-semibold text-black hover:underline cursor-pointer"
+                                >
+                                    {post.author?.username || `user${post.author?._id}`}
+                                </Link>
                                 <span className="text-xs text-gray-400">{postTime}</span>
                             </div>
                         </div>

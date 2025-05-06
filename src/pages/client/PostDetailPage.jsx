@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 import { Avatar, Button, Input, Menu, Dropdown, notification, Modal } from 'antd';
 import { HeartOutlined, HeartFilled, MessageOutlined, SendOutlined, UserOutlined, LeftOutlined, RightOutlined, SoundOutlined, AudioMutedOutlined } from '@ant-design/icons';
 import { IoIosMore } from 'react-icons/io';
@@ -50,7 +51,8 @@ const copyToClipboard = (text) => {
 
 const PostDetailPage = () => {
     const { postId } = useParams();
-    const userId = "662b00000000000000000005";
+    const navigate = useNavigate();
+    const userId = useSelector((state) => state.auth.user?._id);
     const [postDetail, setPostDetail] = useState(null);
     const [comments, setComments] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -156,7 +158,38 @@ const PostDetailPage = () => {
     const handlePrev = () => sliderRef.current.slickPrev();
     const handleNext = () => sliderRef.current.slickNext();
 
+    const showLoginNotification = () => {
+        notification.warning({
+            message: 'Authentication Required',
+            description: 'Please log in to interact with posts, or continue viewing without interaction.',
+            placement: 'topRight',
+            duration: 0, // Keep notification open until user interacts
+            btn: (
+                <div className="flex gap-2">
+                    <Button
+                        type="primary"
+                        onClick={() => {
+                            notification.destroy();
+                            navigate('/login');
+                        }}
+                    >
+                        Log In
+                    </Button>
+                    <Button
+                        onClick={() => notification.destroy()}
+                    >
+                        Continue Viewing
+                    </Button>
+                </div>
+            ),
+        });
+    };
+
     const handleLikeToggle = async () => {
+        if (!userId) {
+            showLoginNotification();
+            return;
+        }
         try {
             if (isLiked) {
                 await unlikePostAPI(postId, userId);
@@ -179,6 +212,10 @@ const PostDetailPage = () => {
 
     // Xử lý like/unlike bình luận
     const handleLikeComment = async (commentId) => {
+        if (!userId) {
+            showLoginNotification();
+            return;
+        }
         const comment = comments.find(c => c._id === commentId);
         const isCommentLiked = comment?.likes?.some(like => (like._id || like) === userId) || false;
         try {
@@ -202,6 +239,10 @@ const PostDetailPage = () => {
 
     // Xử lý xóa bình luận
     const handleDeleteComment = async (commentId) => {
+        if (!userId) {
+            showLoginNotification();
+            return;
+        }
         if (isDeleting[commentId]) return;
         setIsDeleting(prev => ({ ...prev, [commentId]: true }));
         try {
@@ -244,6 +285,10 @@ const PostDetailPage = () => {
     );
 
     const handleComment = async () => {
+        if (!userId) {
+            showLoginNotification();
+            return;
+        }
         if (commentText.trim()) {
             try {
                 console.log('Gửi comment với dữ liệu:', {
@@ -257,9 +302,15 @@ const PostDetailPage = () => {
                 if (newComment && newComment._id) {
                     setComments(prev => [newComment, ...prev]);
                     setCommentTimes(prev => ['0s', ...prev]);
+                    setCommentText(''); // Reset input sau khi gửi comment
                 }
             } catch (error) {
                 console.error('Error adding comment:', error);
+                notification.error({
+                    message: 'Error',
+                    description: error.message || 'Failed to add comment. Please try again.',
+                    placement: 'topRight',
+                });
             }
         }
     };

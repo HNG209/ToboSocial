@@ -1,10 +1,13 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
+import { notification, Button } from 'antd';
 import PostCard from '../components/home/postCard';
 import { fetchPosts, likePost, unlikePost, createComment, resetPosts } from '../redux/post/postsSlice';
 
 function Home() {
     const dispatch = useDispatch();
+    const navigate = useNavigate();
     const posts = useSelector((state) => state.posts.posts);
     const status = useSelector((state) => state.posts.status);
     const currentPage = useSelector((state) => state.posts.currentPage);
@@ -36,7 +39,38 @@ function Home() {
         dispatch(fetchPosts({ page: 1 }));
     }, [dispatch]);
 
+    const showLoginNotification = () => {
+        notification.warning({
+            message: 'Authentication Required',
+            description: 'Please log in to interact with posts, or continue viewing without interaction.',
+            placement: 'topRight',
+            duration: 0, // Keep notification open until user interacts
+            btn: (
+                <div className="flex gap-2">
+                    <Button
+                        type="primary"
+                        onClick={() => {
+                            notification.destroy();
+                            navigate('/login');
+                        }}
+                    >
+                        Log In
+                    </Button>
+                    <Button
+                        onClick={() => notification.destroy()}
+                    >
+                        Continue Viewing
+                    </Button>
+                </div>
+            ),
+        });
+    };
+
     const handleLikeToggle = (postId, isLiked) => {
+        if (!userId) {
+            showLoginNotification();
+            return;
+        }
         if (isLiked) {
             dispatch(unlikePost({ postId, userId }));
         } else {
@@ -45,6 +79,10 @@ function Home() {
     };
 
     const handleComment = (postId, text) => {
+        if (!userId) {
+            showLoginNotification();
+            return;
+        }
         dispatch(createComment({ postId, userId, text }));
     };
 
