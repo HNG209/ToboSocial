@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Modal, Button } from 'antd';
-import { PlusOutlined } from '@ant-design/icons'; // Import the Plus icon
+import { PlusOutlined, UploadOutlined } from '@ant-design/icons'; // Import the Plus icon
 import { usePreviewImage, useSetFileInput, useSetPreviewImage, useSetUploadedImage, useUploadedImage } from './context/UploadedImageContext';
 
 function ImageUploader() {
@@ -58,7 +58,7 @@ function ImageUploader() {
         htmlFor="file-upload"
         className="cursor-pointer flex items-center bg-gray-400 mt-2 text-white py-2 px-4 rounded-md hover:bg-gray-600 transition duration-200"
       >
-        <PlusOutlined className="mr-2 text-xs" /> {/* Add the Plus icon */}
+        <UploadOutlined className='mr-2 text-lg' />
         <span className="text-sm">Upload Avatar</span> {/* Make the text smaller */}
       </label>
       <input

@@ -19,7 +19,7 @@ export default function PostThumb({ post }) {
             <div className="relative rounded-lg overflow-hidden group shadow-md aspect-square w-full">
                 {/* Image */}
                 <img
-                    src={post.mediaFiles[0].url || "https://via.placeholder.com/300"}
+                    src={post?.mediaFiles[0]?.url || "https://via.placeholder.com/300"}
                     alt="post"
                     className="w-full h-full object-cover"
                 />

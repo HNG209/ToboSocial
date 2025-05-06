@@ -176,7 +176,7 @@ const PostDetail = ({ open, onClose }) => {
                         <Avatar size={30} className="absolute top-0 left-0 z-10 m-4" src={userData?.profile?.avatar || 'https://res.cloudinary.com/dwaldcj4v/image/upload/v1745215451/sodmg5jwxc8m2pho0i8r.jpg'}>
                             <img src="https://i.pravatar.cc/150?u=user" alt="user" className="w-full object-cover max-h-[600px]" />
                         </Avatar>
-                        <span className='ml-2'>{userData.fullName}</span>
+                        <span className='ml-2'>{userData?.fullName}</span>
                     </div>
 
                     <div className="space-y-2 mb-4 h-100 sm:max-h-80 md:max-h-96 overflow-y-auto">

@@ -79,6 +79,13 @@ const getUserAPI = (userId) => {
     return axios.get(URL_BACKEND);
 }
 
+// v2 get user
+const getUserAPIv2 = (userId, currentUserId) => {
+    const URL_BACKEND = `/v1/api/users/${userId}?currentUserId=${currentUserId}`;
+    return axios.get(URL_BACKEND);
+}
+
+
 //update user api
 const updateUserAPI = (data) => {
     const URL_BACKEND = `/v1/api/users`;
@@ -111,6 +118,38 @@ const counLikeAPIv2 = (postId, onModel) => {
     return axios.post(URL_BACKEND, { onModel })
 }
 
+//follow API
+// Follow người dùng
+const followUserAPI = (subjectId, followingId) => {
+    const URL_BACKEND = `v1/api/follow`;
+    return axios.post(URL_BACKEND, { subjectId, followingId });
+};
+
+// Unfollow người dùng
+const unfollowUserAPI = (subjectId, followingId) => {
+    const URL_BACKEND = `v1/api/unfollow`;
+    return axios.post(URL_BACKEND, { subjectId, followingId });
+};
+
+// Lấy danh sách người đang được user follow
+const getFollowingUsersAPI = (userId) => {
+    const URL_BACKEND = `v1/api/${userId}/following`;
+    return axios.get(URL_BACKEND);
+};
+
+// Lấy danh sách người đang follow user
+const getFollowersAPI = (userId) => {
+    const URL_BACKEND = `v1/api/${userId}/followers`;
+    return axios.get(URL_BACKEND);
+};
+
+// Kiểm tra đã follow hay chưa
+const isFollowingAPI = (subjectId, followingId) => {
+    const URL_BACKEND = `v1/api/is-following?subjectId=${subjectId}&followingId=${followingId}`;
+    return axios.get(URL_BACKEND);
+};
+
+
 export {
     fetchPostsAPI,
     likePostAPI,
@@ -126,11 +165,17 @@ export {
     fetchPostDetailAPI,
     fetchPostByUserAPI,
     getUserAPI,
+    getUserAPIv2,
     updateUserAPI,
     fetchPostAuthorAPI,
     likeAPIv2,
     unlikeAPIv2,
     likeStatusAPIv2,
     fetchLikersAPIv2,
-    counLikeAPIv2
+    counLikeAPIv2,
+    followUserAPI,
+    unfollowUserAPI,
+    getFollowingUsersAPI,
+    getFollowersAPI,
+    isFollowingAPI
 };
