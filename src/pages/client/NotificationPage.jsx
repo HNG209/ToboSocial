@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useSelector } from 'react-redux'; // Thêm useSelector
 import { List, Avatar, Button, message, Typography, Space, Card, Tag, Row, Col } from 'antd';
 import { CheckCircleOutlined, EyeOutlined } from '@ant-design/icons';
 import { getUserNotificationsAPI, markNotificationAsReadAPI, markAllNotificationsAsReadAPI } from '../../services/admin.service';
@@ -46,13 +47,10 @@ const NotificationPage = () => {
     const [loading, setLoading] = useState(false);
     const [pagination, setPagination] = useState({ current: 1, pageSize: 10 });
 
-    const getUserIdFromLocalStorage = () => {
-        const user = JSON.parse(localStorage.getItem('user'));
-        return user?._id;
-    };
+    const userId = useSelector((state) => state.auth.user?._id);
+
 
     const fetchNotifications = async () => {
-        const userId = getUserIdFromLocalStorage();
         if (!userId) {
             message.error('Không tìm thấy thông tin người dùng. Vui lòng đăng nhập lại.');
             return;
@@ -86,7 +84,7 @@ const NotificationPage = () => {
 
     useEffect(() => {
         fetchNotifications();
-    }, [pagination.current, pagination.pageSize]);
+    }, [pagination.current, pagination.pageSize, userId]); // Thêm userId vào dependency
 
     const handleMarkAsRead = async (notificationId) => {
         try {
@@ -103,14 +101,15 @@ const NotificationPage = () => {
     };
 
     const handleMarkAllAsRead = async () => {
-        const userId = getUserIdFromLocalStorage();
         if (!userId) {
             message.error('Không tìm thấy thông tin người dùng.');
             return;
         }
 
         try {
-            await markAllNotificationsAsReadAPI({ userId });
+            console.log(userId);
+
+            await markAllNotificationsAsReadAPI(userId); // Gửi userId
             message.success('Đã đánh dấu tất cả thông báo là đã xem');
             setNotifications(prev => prev.map(notif => ({ ...notif, isRead: true })));
         } catch (error) {
