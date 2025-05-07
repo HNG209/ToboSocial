@@ -95,7 +95,9 @@ const AdminLayout = () => {
                 transition={{ type: "tween", duration: 0.3, ease: "easeInOut" }}
                 className="fixed top-0 left-0 z-40 w-72 h-screen bg-gradient-to-b from-indigo-900 to-gray-900 text-white px-6 pt-8 pb-4 shadow-2xl overflow-hidden"
             >
-                <h2 className="hidden md:block mb-8 text-2xl font-bold tracking-wide text-white">Admin Panel</h2>
+                <NavLink to="/admin">
+                    <h2 className="hidden md:block mb-8 text-2xl font-bold tracking-wide text-white">Admin Panel</h2>
+                </NavLink>
                 <nav className="flex flex-col gap-2 max-h-[calc(100vh-8rem)] overflow-hidden">
                     {navLinks.map(renderLink)}
                 </nav>
@@ -120,8 +122,8 @@ const AdminLayout = () => {
                         onClick={handleLogout}
                         disabled={isLoggingOut}
                         className={`inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium text-gray-700 transition-all duration-200 ${isLoggingOut
-                                ? "opacity-50 cursor-not-allowed"
-                                : "hover:bg-indigo-100 hover:border-indigo-500"
+                            ? "opacity-50 cursor-not-allowed"
+                            : "hover:bg-indigo-100 hover:border-indigo-500"
                             }`}
                         aria-label="Logout"
                     >
