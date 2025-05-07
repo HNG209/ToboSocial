@@ -37,11 +37,16 @@ function LoginPage() {
       const result = await dispatch(
         login({ email: formData.email, password: formData.password })
       ).unwrap();
+      // Kiểm tra vai trò từ result
+      const userRole = result?.user?.role || result?.role || 'user';
+      if (userRole === 'banned') {
+        setModalMessage('Tài khoản bị khóa, không thể đăng nhập.');
+        setShowModal(true);
+        return;
+      }
       setModalMessage('Đăng nhập thành công!');
       setShowModal(true);
       setTimeout(() => {
-        // Kiểm tra vai trò từ result (giả định result chứa user.role)
-        const userRole = result?.user?.role || result?.role || 'user'; // Điều chỉnh theo cấu trúc dữ liệu thực tế
         if (userRole === 'admin') {
           navigate('/admin'); // Redirect đến trang admin
         } else {
