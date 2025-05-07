@@ -79,8 +79,8 @@ const ExplorePage = () => {
     const commentSectionRef = useRef(null);
     const postSectionRef = useRef(null);
     const loadTime = useRef(new Date());
-    const postLimit = 12; // Số bài viết tải mỗi lần
-    const commentLimit = 10; // Số bình luận tải mỗi lần
+    const postLimit = 12;
+    const commentLimit = 10;
     const postObserverRef = useRef(null);
     const commentObserverRef = useRef(null);
     const loadMorePostsRef = useRef(null);
@@ -91,17 +91,21 @@ const ExplorePage = () => {
         try {
             setPostLoading(true);
             setPostError(null);
-            console.log(`Fetching posts, page ${page}, limit ${postLimit}`); // Debug trước khi gọi API
-            const postsData = await fetchPostsAPI(page, postLimit); // Giả định API hỗ trợ page, limit
-            console.log('Posts Data:', postsData); // Debug dữ liệu API trả về
+            console.log(`Fetching posts, page ${page}, limit ${postLimit}`);
+            const postsData = await fetchPostsAPI(page, postLimit);
+            console.log('Posts Data:', postsData);
             if (!Array.isArray(postsData)) {
                 throw new Error('Invalid posts data format');
             }
-            const newPosts = postsData;
+            const newPosts = postsData.map(post => ({
+                ...post,
+                likes: post?.likes || [],
+                mediaFiles: post?.mediaFiles || [],
+            }));
             setPosts(prev => (page === 1 ? newPosts : [...prev, ...newPosts]));
             setHasMorePosts(newPosts.length === postLimit);
             setCurrentPostPage(page);
-            console.log(`Updated posts state: ${newPosts.length} new posts, total: ${page === 1 ? newPosts.length : posts.length + newPosts.length}`); // Debug sau khi cập nhật state
+            console.log(`Updated posts state: ${newPosts.length} new posts, total: ${page === 1 ? newPosts.length : posts.length + newPosts.length}`);
         } catch (error) {
             console.error('Error fetching posts:', error);
             setPostError(error.message || 'Failed to load posts. Please try again.');
@@ -120,23 +124,23 @@ const ExplorePage = () => {
     // Infinite scroll cho bài viết
     const loadMorePosts = useCallback(async () => {
         if (!hasMorePosts || postLoading || postError) {
-            console.log('Load more posts skipped:', { hasMorePosts, postLoading, postError }); // Debug lý do bỏ qua
+            console.log('Load more posts skipped:', { hasMorePosts, postLoading, postError });
             return;
         }
-        console.log(`Triggering load more posts for page ${currentPostPage + 1}`); // Debug trước khi tải
+        console.log(`Triggering load more posts for page ${currentPostPage + 1}`);
         await fetchPosts(currentPostPage + 1);
     }, [hasMorePosts, postLoading, postError, currentPostPage]);
 
     useEffect(() => {
         if (!loadMorePostsRef.current) {
-            console.log('Post IntersectionObserver not initialized: loadMorePostsRef missing'); // Debug
+            console.log('Post IntersectionObserver not initialized: loadMorePostsRef missing');
             return;
         }
 
         const observer = new IntersectionObserver(
             (entries) => {
                 if (entries[0].isIntersecting) {
-                    console.log('Load more posts trigger intersected'); // Debug khi phần tử được quan sát
+                    console.log('Load more posts trigger intersected');
                     loadMorePosts();
                 }
             },
@@ -149,7 +153,7 @@ const ExplorePage = () => {
         return () => {
             if (postObserverRef.current) {
                 postObserverRef.current.disconnect();
-                console.log('Post IntersectionObserver disconnected'); // Debug khi cleanup
+                console.log('Post IntersectionObserver disconnected');
             }
         };
     }, [loadMorePosts]);
@@ -159,9 +163,9 @@ const ExplorePage = () => {
         try {
             setCommentLoading(true);
             setCommentError(null);
-            console.log(`Fetching comments for post ${postId}, page ${page}, limit ${commentLimit}`); // Debug trước khi gọi API
+            console.log(`Fetching comments for post ${postId}, page ${page}, limit ${commentLimit}`);
             const commentsData = await fetchCommentsByPostAPI(postId, page, commentLimit);
-            console.log('Comments Data:', commentsData); // Debug dữ liệu API trả về
+            console.log('Comments Data:', commentsData);
             if (!Array.isArray(commentsData)) {
                 throw new Error('Invalid comments data format');
             }
@@ -169,7 +173,7 @@ const ExplorePage = () => {
             setComments(prev => (page === 1 ? newComments : [...prev, ...newComments]));
             setHasMoreComments(newComments.length === commentLimit);
             setCurrentCommentPage(page);
-            console.log(`Updated comments state: ${newComments.length} new comments, total: ${page === 1 ? newComments.length : comments.length + newComments.length}`); // Debug sau khi cập nhật state
+            console.log(`Updated comments state: ${newComments.length} new comments, total: ${page === 1 ? newComments.length : comments.length + newComments.length}`);
         } catch (error) {
             console.error('Error fetching comments:', error);
             setCommentError(error.message || 'Failed to load comments. Please try again.');
@@ -180,7 +184,7 @@ const ExplorePage = () => {
 
     // Sắp xếp bình luận
     useEffect(() => {
-        console.log('Comments State:', comments); // Debug trạng thái comments
+        console.log('Comments State:', comments);
         if (comments.length > 0) {
             const sorted = [...comments].sort((a, b) => {
                 const aUserId = typeof a.user === 'object' ? a.user?._id : a.user;
@@ -207,7 +211,7 @@ const ExplorePage = () => {
         const handleScroll = () => {
             if (commentSectionRef.current) {
                 const { scrollTop, scrollHeight, clientHeight } = commentSectionRef.current;
-                console.log(`Comment scroll position: scrollTop=${scrollTop}, scrollHeight=${scrollHeight}, clientHeight=${clientHeight}`); // Debug vị trí cuộn
+                console.log(`Comment scroll position: scrollTop=${scrollTop}, scrollHeight=${scrollHeight}, clientHeight=${clientHeight}`);
                 if (scrollHeight - scrollTop - clientHeight < 50) {
                     setIsCommentInputVisible(true);
                 } else {
@@ -229,23 +233,23 @@ const ExplorePage = () => {
     // Infinite scroll cho bình luận
     const loadMoreComments = useCallback(async () => {
         if (!selectedPost || !hasMoreComments || commentLoading || commentError) {
-            console.log('Load more comments skipped:', { selectedPost: !!selectedPost, hasMoreComments, commentLoading, commentError }); // Debug lý do bỏ qua
+            console.log('Load more comments skipped:', { selectedPost: !!selectedPost, hasMoreComments, commentLoading, commentError });
             return;
         }
-        console.log(`Triggering load more comments for page ${currentCommentPage + 1}`); // Debug trước khi tải
+        console.log(`Triggering load more comments for page ${currentCommentPage + 1}`);
         await fetchComments(selectedPost._id, currentCommentPage + 1);
     }, [selectedPost, hasMoreComments, commentLoading, commentError, currentCommentPage]);
 
     useEffect(() => {
         if (!isPostModalOpen || !loadMoreCommentsRef.current) {
-            console.log('Comment IntersectionObserver not initialized:', { isPostModalOpen, loadMoreCommentsRef: !!loadMoreCommentsRef.current }); // Debug điều kiện khởi tạo
+            console.log('Comment IntersectionObserver not initialized:', { isPostModalOpen, loadMoreCommentsRef: !!loadMoreCommentsRef.current });
             return;
         }
 
         const observer = new IntersectionObserver(
             (entries) => {
                 if (entries[0].isIntersecting) {
-                    console.log('Load more comments trigger intersected'); // Debug khi phần tử được quan sát
+                    console.log('Load more comments trigger intersected');
                     loadMoreComments();
                 }
             },
@@ -258,7 +262,7 @@ const ExplorePage = () => {
         return () => {
             if (commentObserverRef.current) {
                 commentObserverRef.current.disconnect();
-                console.log('Comment IntersectionObserver disconnected'); // Debug khi cleanup
+                console.log('Comment IntersectionObserver disconnected');
             }
         };
     }, [isPostModalOpen, loadMoreComments]);
@@ -267,9 +271,16 @@ const ExplorePage = () => {
     const openPostModal = async (post) => {
         try {
             const postDetail = await fetchPostDetailAPI(post._id);
-            console.log('Post Detail:', postDetail); // Debug chi tiết bài viết
-            setSelectedPost(postDetail);
-            setPostTime(timeAgo(postDetail.createdAt, loadTime.current));
+            console.log('Post Detail:', postDetail);
+            setSelectedPost({
+                ...postDetail,
+                likes: postDetail?.likes || [],
+                mediaFiles: postDetail?.mediaFiles || [],
+                author: postDetail?.author || { _id: '', username: '' },
+                caption: postDetail?.caption || '',
+                createdAt: postDetail?.createdAt || new Date(),
+            });
+            setPostTime(timeAgo(postDetail?.createdAt || new Date(), loadTime.current));
             setCurrentCommentPage(1);
             setHasMoreComments(true);
             await fetchComments(postDetail._id, 1);
@@ -306,7 +317,14 @@ const ExplorePage = () => {
                 await likePostAPI(selectedPost._id, userId);
             }
             const updatedPost = await fetchPostDetailAPI(selectedPost._id);
-            setSelectedPost(updatedPost);
+            setSelectedPost({
+                ...updatedPost,
+                likes: updatedPost?.likes || [],
+                mediaFiles: updatedPost?.mediaFiles || [],
+                author: updatedPost?.author || { _id: '', username: '' },
+                caption: updatedPost?.caption || '',
+                createdAt: updatedPost?.createdAt || new Date(),
+            });
         } catch (error) {
             console.error('Error toggling like:', error);
             notification.error({
@@ -425,7 +443,7 @@ const ExplorePage = () => {
 
     const handleVideoPlay = (current) => {
         const video = videoRefs.current[current];
-        if (video && selectedPost?.mediaFiles[current]?.type === 'video') {
+        if (video && selectedPost?.mediaFiles?.[current]?.type === 'video') {
             video.muted = isMuted;
             video.play().catch(error => console.log('Video play error:', error));
         }
@@ -440,8 +458,8 @@ const ExplorePage = () => {
         }
     };
 
-    const handlePrev = () => sliderRef.current.slickPrev();
-    const handleNext = () => sliderRef.current.slickNext();
+    const handlePrev = () => sliderRef.current?.slickPrev();
+    const handleNext = () => sliderRef.current?.slickNext();
 
     // Menu xóa bình luận
     const commentMenu = (commentId) => (
@@ -464,8 +482,8 @@ const ExplorePage = () => {
                 {posts.map((post, index) => {
                     const isPattern1 = Math.floor(index / 5) % 2 === 0;
                     const subIndex = index % 5;
-                    const isVideo = post.mediaFiles[0]?.type === 'video';
-                    const isMultiMedia = post.mediaFiles.length > 1;
+                    const isVideo = post.mediaFiles?.[0]?.type === 'video';
+                    const isMultiMedia = post.mediaFiles?.length > 1;
 
                     let gridStyle = 'relative aspect-square';
                     if (isPattern1 && subIndex === 2) {
@@ -474,17 +492,34 @@ const ExplorePage = () => {
                         gridStyle = 'relative row-span-2 aspect-[1/2]';
                     }
 
+                    // Tạo poster URL từ public_id của Cloudinary nếu có
+                    const posterUrl = post.mediaFiles?.[0]?.public_id
+                        ? `https://res.cloudinary.com/<your_cloud_name>/image/upload/${post.mediaFiles[0].public_id}.jpg`
+                        : undefined;
+
                     return (
                         <div
                             key={post._id}
                             className={gridStyle}
                             onClick={() => openPostModal(post)}
                         >
-                            <img
-                                src={post.mediaFiles[0]?.url || 'https://via.placeholder.com/400'}
-                                alt="Content image"
-                                className="w-full h-full object-cover"
-                            />
+                            {isVideo ? (
+                                <video
+                                    src={post.mediaFiles?.[0]?.url}
+                                    poster={posterUrl}
+                                    className="w-full h-full object-cover"
+                                    muted
+                                    playsInline
+                                    preload="metadata"
+                                />
+                            ) : (
+                                <img
+                                    src={post.mediaFiles?.[0]?.url || 'https://via.placeholder.com/400'}
+                                    alt="Content image"
+                                    className="w-full h-full object-cover"
+                                    loading="lazy"
+                                />
+                            )}
                             {isVideo && (
                                 <div className="absolute top-2 right-2 text-white">
                                     <Play className="w-4 h-4 fill-white" />
@@ -538,57 +573,59 @@ const ExplorePage = () => {
                 >
                     <div className="flex h-[80vh]">
                         {/* Left: Media */}
-                        <div className="hidden md:block w-3/5 h-full bg-black relative">
-                            <Slider ref={sliderRef} {...sliderSettings}>
-                                {selectedPost.mediaFiles.map((media, index) => (
-                                    <div key={index} className="w-full h-[80vh] relative">
-                                        {media.type === 'image' ? (
-                                            <img
-                                                src={media.url}
-                                                alt={`post-media-${index}`}
-                                                className="w-full h-full object-contain"
-                                            />
-                                        ) : (
-                                            <>
-                                                <video
-                                                    ref={(el) => (videoRefs.current[index] = el)}
+                        {selectedPost?.mediaFiles?.length > 0 && (
+                            <div className="hidden md:block w-3/5 h-full bg-black relative">
+                                <Slider ref={sliderRef} {...sliderSettings}>
+                                    {selectedPost.mediaFiles.map((media, index) => (
+                                        <div key={index} className="w-full h-[80vh] relative">
+                                            {media.type === 'image' ? (
+                                                <img
                                                     src={media.url}
+                                                    alt={`post-media-${index}`}
                                                     className="w-full h-full object-contain"
-                                                    loop
-                                                    playsInline
                                                 />
-                                                <button
-                                                    className="absolute bottom-2 right-2 text-white bg-black bg-opacity-50 rounded-full p-1"
-                                                    onClick={toggleMute}
-                                                >
-                                                    {isMuted ? <AudioMutedOutlined /> : <SoundOutlined />}
-                                                </button>
-                                            </>
+                                            ) : (
+                                                <>
+                                                    <video
+                                                        ref={(el) => (videoRefs.current[index] = el)}
+                                                        src={media.url}
+                                                        className="w-full h-full object-contain"
+                                                        loop
+                                                        playsInline
+                                                    />
+                                                    <button
+                                                        className="absolute bottom-2 right-2 text-white bg-black bg-opacity-50 rounded-full p-1"
+                                                        onClick={toggleMute}
+                                                    >
+                                                        {isMuted ? <AudioMutedOutlined /> : <SoundOutlined />}
+                                                    </button>
+                                                </>
+                                            )}
+                                        </div>
+                                    ))}
+                                </Slider>
+                                {selectedPost?.mediaFiles?.length > 1 && (
+                                    <>
+                                        {currentSlide !== 0 && (
+                                            <button
+                                                className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-70 rounded-full p-1 shadow-md z-10"
+                                                onClick={handlePrev}
+                                            >
+                                                <LeftOutlined className="text-black text-sm" />
+                                            </button>
                                         )}
-                                    </div>
-                                ))}
-                            </Slider>
-                            {selectedPost.mediaFiles.length > 1 && (
-                                <>
-                                    {currentSlide !== 0 && (
-                                        <button
-                                            className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-70 rounded-full p-1 shadow-md z-10"
-                                            onClick={handlePrev}
-                                        >
-                                            <LeftOutlined className="text-black text-sm" />
-                                        </button>
-                                    )}
-                                    {currentSlide !== selectedPost.mediaFiles.length - 1 && (
-                                        <button
-                                            className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-70 rounded-full p-1 shadow-md z-10"
-                                            onClick={handleNext}
-                                        >
-                                            <RightOutlined className="text-black text-sm" />
-                                        </button>
-                                    )}
-                                </>
-                            )}
-                        </div>
+                                        {currentSlide !== (selectedPost?.mediaFiles?.length || 0) - 1 && (
+                                            <button
+                                                className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-70 rounded-full p-1 shadow-md z-10"
+                                                onClick={handleNext}
+                                            >
+                                                <RightOutlined className="text-black text-sm" />
+                                            </button>
+                                        )}
+                                    </>
+                                )}
+                            </div>
+                        )}
 
                         {/* Right: Comments */}
                         <div className="w-full md:w-2/5 h-full flex flex-col">
@@ -775,7 +812,7 @@ const ExplorePage = () => {
                                     </div>
                                 </div>
                                 <div className="text-sm font-semibold text-black">
-                                    {selectedPost.likes.length} likes
+                                    {selectedPost?.likes?.length || 0} likes
                                 </div>
                             </div>
 

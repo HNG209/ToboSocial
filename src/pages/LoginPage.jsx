@@ -8,7 +8,7 @@ import { login } from '../redux/auth/authSlice';
 function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
-    email: '', // Thay username thành email để phù hợp với authSlice
+    email: '',
     password: '',
   });
   const [showModal, setShowModal] = useState(false);
@@ -16,7 +16,7 @@ function LoginPage() {
 
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { status, error } = useSelector((state) => state.auth); // Lấy trạng thái từ Redux
+  const { status, error } = useSelector((state) => state.auth);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -40,7 +40,13 @@ function LoginPage() {
       setModalMessage('Đăng nhập thành công!');
       setShowModal(true);
       setTimeout(() => {
-        navigate('/'); // Chuyển hướng sau khi đăng nhập thành công
+        // Kiểm tra vai trò từ result (giả định result chứa user.role)
+        const userRole = result?.user?.role || result?.role || 'user'; // Điều chỉnh theo cấu trúc dữ liệu thực tế
+        if (userRole === 'admin') {
+          navigate('/admin'); // Redirect đến trang admin
+        } else {
+          navigate('/'); // Redirect đến trang chính
+        }
       }, 1500);
     } catch (err) {
       setModalMessage(err || 'Đăng nhập thất bại. Vui lòng thử lại.');
