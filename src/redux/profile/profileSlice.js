@@ -1,5 +1,6 @@
 import { fetchPostByUserAPI, followUserAPI, getUserAPI, getUserAPIv2, unfollowUserAPI, updateUserAPI } from "../../services/api.service";
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import { toggleLike } from "../post/selectedPostSlice";
 
 const getLocalStorageId = () => {
     //get user from localStorage
@@ -89,6 +90,12 @@ const profileSlice = createSlice({
     },
     extraReducers: (builder) => {
         builder
+            .addCase(toggleLike.fulfilled, (state, action) => {                
+                const post = state.posts.find(p => p._id === action.payload.postId);
+                if (post) {
+                    post.likeCount = action.payload.result.isLiked ? post.likeCount + 1 : post.likeCount - 1;
+                }
+            })
             // ===== Fetch Posts by User =====
             .addCase(fetchPostByUser.pending, (state) => {
                 state.status = 'loading'; // Đặt trạng thái thành loading
@@ -96,6 +103,7 @@ const profileSlice = createSlice({
             .addCase(fetchPostByUser.fulfilled, (state, action) => {
                 state.status = 'succeeded'; // Đặt trạng thái thành succeeded
                 state.posts = action.payload; // Gán danh sách bài viết từ API
+                console.log(action.payload)
             })
             .addCase(fetchPostByUser.rejected, (state, action) => {
                 state.status = 'failed'; // Đặt trạng thái thành failed

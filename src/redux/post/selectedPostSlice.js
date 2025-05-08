@@ -56,8 +56,10 @@ export const createComment = createAsyncThunk('posts/createComment', async ({ po
     }
 });
 
-export const likePost = createAsyncThunk('posts/likePost', async (postId, { rejectWithValue }) => {
+export const likePost = createAsyncThunk('posts/likePost', async (postId, { getState, rejectWithValue }) => {
     try {
+        const state = getState();
+        const likeCount = state.profile.posts.find(post => post._id === postId).likeCount;
         const response = await likePostAPIv2(postId, getLocalStorageId());
 
         return response;
@@ -71,10 +73,10 @@ export const toggleLike = createAsyncThunk('posts/toggleLike', async (postId, { 
     try {
         const rs = await likeStatusAPIv2(postId, getLocalStorageId(), 'post');
         if (!rs.isLiked) {
-            return await likeAPIv2(postId, getLocalStorageId(), 'post');
+            return { postId, result: await likeAPIv2(postId, getLocalStorageId(), 'post') };
         }
 
-        return await unlikeAPIv2(postId, getLocalStorageId(), 'post');
+        return { postId, result: await unlikeAPIv2(postId, getLocalStorageId(), 'post') };
 
     } catch (error) {
         console.error('Error in fetching post detail:', error.message);
@@ -115,7 +117,6 @@ const selectedPostSlice = createSlice({
             .addCase(fetchPost.fulfilled, (state, action) => {
                 state.post = action.payload;
             })
-
             // ===== Fetch Posts by User =====
             .addCase(fetchPostDetail.pending, (state) => {
                 state.status = 'loading'; // Đặt trạng thái thành loading
@@ -143,9 +144,9 @@ const selectedPostSlice = createSlice({
 
             //toggle like
             .addCase(toggleLike.fulfilled, (state, action) => {
-                state.isLiked = action.payload.isLiked;
+                state.isLiked = action.payload.result.isLiked;
                 if (state.post) {
-                    state.post.likeCount = action.payload.isLiked ? state.post.likeCount + 1 : state.post.likeCount - 1;
+                    state.post.likeCount = action.payload.result.isLiked ? state.post.likeCount + 1 : state.post.likeCount - 1;
                 }
             })
 

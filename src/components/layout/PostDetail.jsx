@@ -74,7 +74,6 @@ const PostDetail = ({ open, onClose }) => {
     const likeStatus = useSelector((state) => state.selectedPost.isLiked)
     const status = useSelector((state) => state.selectedPost.status)
 
-    console.log('status', status)
     const userData = useSelector((state) => state.profile.user); // current user's data
 
     useEffect(() => {
