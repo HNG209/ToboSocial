@@ -410,7 +410,7 @@ function PostCard({ post: initialPost, userId, onLikeToggle, onComment }) {
                             onMouseLeave={handleMouseLeave}
                         >
                             <Link
-                                to={`/profile/${post.author?.username}`}
+                                to={`/profile/other/${post.author?._id}`}
                                 className="font-semibold text-black hover:underline cursor-pointer"
                             >
                                 {post.author?.username}

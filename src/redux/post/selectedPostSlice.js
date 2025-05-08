@@ -11,10 +11,8 @@ const getLocalStorageId = () => {
     return userFromStorage ? userFromStorage._id : null; // Lấy userId từ localStorage
 }
 
-export const fetchPostDetailById = createAsyncThunk('posts/fetchPostById', async (postId, { rejectWithValue }) => {
+export const fetchPostDetail = createAsyncThunk('posts/fetchPostDetail', async (postId, { rejectWithValue }) => {
     try {
-        // fetch post
-        const postResponse = await fetchPostDetailAPI(postId)
         // fetch author
         const authorResponse = await fetchPostAuthorAPI(postId)
         // fetch comments
@@ -24,9 +22,24 @@ export const fetchPostDetailById = createAsyncThunk('posts/fetchPostById', async
         // like status
         const likeStatus = await likeStatusAPIv2(postId, getLocalStorageId(), 'post')
 
-        return { postResponse, authorResponse, commentsResponse, likersResponse, likeStatus };
+        return { authorResponse, commentsResponse, likersResponse, likeStatus };
     } catch (error) {
         console.error('Error in fetching post detail:', error.message);
+        return rejectWithValue(error.message);
+    }
+});
+
+
+export const fetchPost = createAsyncThunk('posts/fetchPost', async (postId, { getState, rejectWithValue }) => {
+    try {
+        const state = getState();
+        const postInProfile = state.profile.posts.find(post => post._id === postId);
+        // fetch post, don't need to call API if not neccessary
+        const postResponse = postInProfile || await fetchPostDetailAPI(postId)
+
+        return postResponse;
+    } catch (error) {
+        console.error('Error in fetching post:', error.message);
         return rejectWithValue(error.message);
     }
 });
@@ -99,70 +112,51 @@ const selectedPostSlice = createSlice({
     reducers: {},
     extraReducers: (builder) => {
         builder
+            .addCase(fetchPost.fulfilled, (state, action) => {
+                state.post = action.payload;
+            })
+
             // ===== Fetch Posts by User =====
-            .addCase(fetchPostDetailById.pending, (state) => {
+            .addCase(fetchPostDetail.pending, (state) => {
                 state.status = 'loading'; // Đặt trạng thái thành loading
             })
-            .addCase(fetchPostDetailById.fulfilled, (state, action) => {
-                const { postResponse, authorResponse, commentsResponse, likersResponse, likeStatus } = action.payload;
+            .addCase(fetchPostDetail.fulfilled, (state, action) => {
+                const { authorResponse, commentsResponse, likersResponse, likeStatus } = action.payload;
                 state.status = 'succeeded';
-                state.post = postResponse;
                 state.author = authorResponse;
                 state.comments = commentsResponse; // đã có trạng thái like của người dùng
                 state.likers = likersResponse.users;
                 state.isLiked = likeStatus.isLiked;
             })
-            .addCase(fetchPostDetailById.rejected, (state, action) => {
+            .addCase(fetchPostDetail.rejected, (state, action) => {
                 state.status = 'failed'; // Đặt trạng thái thành failed
                 state.error = action.payload; // Lưu lỗi nếu có
             })
 
             //Create comment
-            .addCase(createComment.pending, (state) => {
-                state.status = 'loading';
-            })
             .addCase(createComment.fulfilled, (state, action) => {
-                state.status = 'succeeded';
                 state.comments = [...state.comments, action.payload];
             })
             .addCase(createComment.rejected, (state, action) => {
-                state.status = 'failed';
                 state.error = action.payload;
             })
 
             //toggle like
-            .addCase(toggleLike.pending, (state) => {
-                state.status = 'loading';
-            })
             .addCase(toggleLike.fulfilled, (state, action) => {
-                state.status = 'succeeded';
                 state.isLiked = action.payload.isLiked;
                 if (state.post) {
                     state.post.likeCount = action.payload.isLiked ? state.post.likeCount + 1 : state.post.likeCount - 1;
                 }
             })
-            .addCase(toggleLike.rejected, (state, action) => {
-                state.status = 'failed';
-                state.error = action.payload;
-            })
 
             //toggle comment like
-            .addCase(toggleCommentLike.pending, (state) => {
-                state.status = 'loading';
-            })
             .addCase(toggleCommentLike.fulfilled, (state, action) => {
-                state.status = 'succeeded';
-
                 const { targetId, isLiked } = action.payload;
 
                 const commentIndex = state.comments.findIndex(c => c._id === targetId);
                 if (commentIndex !== -1) {
                     state.comments[commentIndex].isLiked = isLiked;
                 }
-            })
-            .addCase(toggleCommentLike.rejected, (state, action) => {
-                state.status = 'failed';
-                state.error = action.payload;
             })
     }
 })

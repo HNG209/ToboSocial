@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Avatar, Modal } from 'antd';
 import { Heart, Send, MessageCircle, Bookmark, Volume2, VolumeX, ChevronLeft, ChevronRight } from 'lucide-react';
 import { HeartOutlined, HeartFilled } from '@ant-design/icons';
+import { Skeleton } from 'antd';
 
 import Slider from 'react-slick';
 import 'slick-carousel/slick/slick.css';
@@ -71,7 +72,9 @@ const PostDetail = ({ open, onClose }) => {
     const postDetail = useSelector((state) => state.selectedPost.post)
     const postComments = useSelector((state) => state.selectedPost.comments)
     const likeStatus = useSelector((state) => state.selectedPost.isLiked)
+    const status = useSelector((state) => state.selectedPost.status)
 
+    console.log('status', status)
     const userData = useSelector((state) => state.profile.user); // current user's data
 
     useEffect(() => {
@@ -192,44 +195,46 @@ const PostDetail = ({ open, onClose }) => {
                         <span className="ml-2 font-semibold">{'@' + userData?.username}</span>
                         <span className="ml-1">{postDetail.caption}</span>
 
-                        {comments.map((c) => (
-                            <div key={c._id} className="mb-5 mt-2 ml-2 flex flex-col">
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <Avatar
-                                            size={30}
-                                            className="absolute top-0 left-0 z-10 m-4 cursor-pointer"
-                                            src={c?.user?.profile?.avatar || 'https://res.cloudinary.com/dwaldcj4v/image/upload/v1745215451/sodmg5jwxc8m2pho0i8r.jpg'}
-                                        >
-                                            <img
-                                                src="https://i.pravatar.cc/150?u=user"
-                                                alt="user"
-                                                className="w-full object-cover max-h-[600px]"
-                                            />
-                                        </Avatar>
-                                        <span onClick={() => { viewProfile(c?.user?._id) }} className="ml-2 font-semibold cursor-pointer hover:text-purple-800">{'@' + c?.user?.username}</span>
-                                        <span className="ml-1">{c?.text}</span>
+                        {
+                            status === 'loading' ? <Skeleton active className='mt-2 ml-2' /> :
+                                comments.map((c) => (
+                                    <div key={c._id} className="mb-5 mt-2 ml-2 flex flex-col">
+                                        <div className="flex items-center justify-between">
+                                            <div>
+                                                <Avatar
+                                                    size={30}
+                                                    className="absolute top-0 left-0 z-10 m-4 cursor-pointer"
+                                                    src={c?.user?.profile?.avatar || 'https://res.cloudinary.com/dwaldcj4v/image/upload/v1745215451/sodmg5jwxc8m2pho0i8r.jpg'}
+                                                >
+                                                    <img
+                                                        src="https://i.pravatar.cc/150?u=user"
+                                                        alt="user"
+                                                        className="w-full object-cover max-h-[600px]"
+                                                    />
+                                                </Avatar>
+                                                <span onClick={() => { viewProfile(c?.user?._id) }} className="ml-2 font-semibold cursor-pointer hover:text-purple-800">{'@' + c?.user?.username}</span>
+                                                <span className="ml-1">{c?.text}</span>
+                                            </div>
+                                            {c?.isLiked ? (
+                                                <HeartFilled
+                                                    onClick={() => toggleCmtLike(c._id)}
+                                                    size={30}
+                                                    className="cursor-pointer text-lg mr-3"
+                                                />
+                                            ) : (
+                                                <HeartOutlined
+                                                    onClick={() => toggleCmtLike(c._id)}
+                                                    size={30}
+                                                    className="cursor-pointer text-lg mr-3"
+                                                />
+                                            )}
+                                        </div>
+                                        {/* Formatted comment time in English */}
+                                        <span className="text-xs text-gray-500 ml-10">
+                                            {formatCommentTime(c.createdAt)}
+                                        </span>
                                     </div>
-                                    {c?.isLiked ? (
-                                        <HeartFilled
-                                            onClick={() => toggleCmtLike(c._id)}
-                                            size={30}
-                                            className="cursor-pointer text-lg mr-3"
-                                        />
-                                    ) : (
-                                        <HeartOutlined
-                                            onClick={() => toggleCmtLike(c._id)}
-                                            size={30}
-                                            className="cursor-pointer text-lg mr-3"
-                                        />
-                                    )}
-                                </div>
-                                {/* Formatted comment time in English */}
-                                <span className="text-xs text-gray-500 ml-10">
-                                    {formatCommentTime(c.createdAt)}
-                                </span>
-                            </div>
-                        ))}
+                                ))}
                     </div>
 
 

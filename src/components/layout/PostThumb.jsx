@@ -5,10 +5,7 @@ import {
 import PostDetail from './PostDetail';
 import { useCallback, useState } from 'react';
 import { useDispatch } from 'react-redux';
-import { fetchComments, fetchPosts } from '../../redux/post/postsSlice';
-import { fetchPostComments } from '../../redux/comments/commentsSlice';
-import { fetchPostCommentsAPI } from '../../services/api.service';
-import { fetchPostDetailById } from '../../redux/post/selectedPostSlice';
+import { fetchPostDetail, fetchPost } from '../../redux/post/selectedPostSlice';
 
 export default function PostThumb({ post }) {
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -27,7 +24,8 @@ export default function PostThumb({ post }) {
                 {/* Hover overlay */}
                 <div
                     onClick={() => {
-                        dispatch(fetchPostDetailById(post._id))
+                        dispatch(fetchPost(post._id))
+                        dispatch(fetchPostDetail(post._id))
                         setIsModalOpen(true)
                     }}
                     className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col items-center justify-center gap-2 cursor-pointer"
