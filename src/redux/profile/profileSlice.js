@@ -1,4 +1,4 @@
-import { fetchPostByUserAPI, followUserAPI, getUserAPI, getUserAPIv2, unfollowUserAPI, updateUserAPI } from "../../services/api.service";
+import { fetchPostByUserAPI, fetchPostByUserAPIV2, followUserAPI, getUserAPI, getUserAPIv2, unfollowUserAPI, updateUserAPI } from "../../services/api.service";
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { toggleLike } from "../post/selectedPostSlice";
 
@@ -17,7 +17,7 @@ export const fetchPostByUser = createAsyncThunk(
     async ({ id, page, limit }, { rejectWithValue }) => {
         const resolvedId = id ?? getLocalStorageId(); // Nếu id != null/undefined thì dùng id, ngược lại dùng userId từ storage
         try {
-            const response = await fetchPostByUserAPI(resolvedId, page, limit);
+            const response = await fetchPostByUserAPIV2(resolvedId, getLocalStorageId(), page, limit);
             return response;
         } catch (error) {
             console.error('Error in fetchPostByUser:', error.message);
@@ -93,6 +93,7 @@ const profileSlice = createSlice({
             .addCase(toggleLike.fulfilled, (state, action) => {                
                 const post = state.posts.find(p => p._id === action.payload.postId);
                 if (post) {
+                    post.isLiked = action.payload.result.isLiked;
                     post.likeCount = action.payload.result.isLiked ? post.likeCount + 1 : post.likeCount - 1;
                 }
             })

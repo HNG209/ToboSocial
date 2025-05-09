@@ -19,10 +19,8 @@ export const fetchPostDetail = createAsyncThunk('posts/fetchPostDetail', async (
         const commentsResponse = await fetchPostCommentsAPIv2(postId, getLocalStorageId())
         // fetch post likers
         const likersResponse = await fetchLikersAPIv2(postId, 'post')
-        // like status
-        const likeStatus = await likeStatusAPIv2(postId, getLocalStorageId(), 'post')
 
-        return { authorResponse, commentsResponse, likersResponse, likeStatus };
+        return { authorResponse, commentsResponse, likersResponse };
     } catch (error) {
         console.error('Error in fetching post detail:', error.message);
         return rejectWithValue(error.message);
@@ -34,7 +32,7 @@ export const fetchPost = createAsyncThunk('posts/fetchPost', async (postId, { ge
     try {
         const state = getState();
         const postInProfile = state.profile.posts.find(post => post._id === postId);
-        // fetch post, don't need to call API if not neccessary
+        // fetch post, don't need to call API if viewing profile(posts already in profile context, reuse it)
         const postResponse = postInProfile || await fetchPostDetailAPI(postId)
 
         return postResponse;
@@ -48,19 +46,6 @@ export const createComment = createAsyncThunk('posts/createComment', async ({ po
     try {
 
         const response = await createCommentAPI(postId, getLocalStorageId(), text);
-
-        return response;
-    } catch (error) {
-        console.error('Error in fetching post detail:', error.message);
-        return rejectWithValue(error.message);
-    }
-});
-
-export const likePost = createAsyncThunk('posts/likePost', async (postId, { getState, rejectWithValue }) => {
-    try {
-        const state = getState();
-        const likeCount = state.profile.posts.find(post => post._id === postId).likeCount;
-        const response = await likePostAPIv2(postId, getLocalStorageId());
 
         return response;
     } catch (error) {
@@ -105,7 +90,6 @@ const selectedPostSlice = createSlice({
     initialState: {
         author: null, // thông tin tác giả của bài viết
         post: {}, // chi tiết bài viết
-        isLiked: false, // đã thích bài viết hay chưa, tương đối với người dùng hiện tại đang đăng nhập
         comments: [], // danh sách bình luận của bài viết, đánh dấu đã like đối với người dùng hiện tại
         likers: [], // danh sách những người like bài viết
         status: 'idle', // Trạng thái tải dữ liệu
@@ -122,12 +106,11 @@ const selectedPostSlice = createSlice({
                 state.status = 'loading'; // Đặt trạng thái thành loading
             })
             .addCase(fetchPostDetail.fulfilled, (state, action) => {
-                const { authorResponse, commentsResponse, likersResponse, likeStatus } = action.payload;
+                const { authorResponse, commentsResponse, likersResponse } = action.payload;
                 state.status = 'succeeded';
                 state.author = authorResponse;
                 state.comments = commentsResponse; // đã có trạng thái like của người dùng
                 state.likers = likersResponse.users;
-                state.isLiked = likeStatus.isLiked;
             })
             .addCase(fetchPostDetail.rejected, (state, action) => {
                 state.status = 'failed'; // Đặt trạng thái thành failed
@@ -144,7 +127,7 @@ const selectedPostSlice = createSlice({
 
             //toggle like
             .addCase(toggleLike.fulfilled, (state, action) => {
-                state.isLiked = action.payload.result.isLiked;
+                state.post.isLiked = action.payload.result.isLiked;
                 if (state.post) {
                     state.post.likeCount = action.payload.result.isLiked ? state.post.likeCount + 1 : state.post.likeCount - 1;
                 }

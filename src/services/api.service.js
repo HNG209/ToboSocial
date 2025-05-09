@@ -68,8 +68,13 @@ const fetchPostDetailAPI = (postId) => {
     return axios.get(URL_BACKEND);
 }
 
-const fetchPostByUserAPI = (userId, page = 1, limit = 10) => {
-    const URL_BACKEND = `/v1/api/users/${userId}/posts?page=${page}&limit=${limit}`;
+const fetchPostByUserAPI = (authorId, page = 1, limit = 10) => {
+    const URL_BACKEND = `/v1/api/users/${authorId}/posts?page=${page}&limit=${limit}`;
+    return axios.get(URL_BACKEND);
+}
+
+const fetchPostByUserAPIV2 = (authorId, userId, page = 1, limit = 10) => {
+    const URL_BACKEND = `/v1/api/users/${authorId}/posts?userId=${userId}&page=${page}&limit=${limit}`;
     return axios.get(URL_BACKEND);
 }
 
@@ -174,6 +179,7 @@ export {
     unlikeCommentAPI,
     fetchPostDetailAPI,
     fetchPostByUserAPI,
+    fetchPostByUserAPIV2,
     getUserAPI,
     getUserAPIv2,
     updateUserAPI,
