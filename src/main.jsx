@@ -33,6 +33,7 @@ import { ConfigProvider, App as AntdApp } from 'antd';
 import AdminRoute from "./pages/client/auth/AdminRoute";
 import PrivateRoute from "./pages/client/auth/PrivateRoute";
 import CreatePost from "./pages/client/CreatePost";
+import PostDetail from "./components/layout/PostDetail";
 
 
 
@@ -97,7 +98,7 @@ const router = createBrowserRouter([
       },
       {
         path: "/posts/:postId",
-        element: <PostDetailPage />,
+        element: <PostDetail />,
       },
       {
         path: "/search",

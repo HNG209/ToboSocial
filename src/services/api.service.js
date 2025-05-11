@@ -28,8 +28,8 @@ const fetchPostCommentsAPI = (postId) => {
     return axios.get(URL_BACKEND);
 }
 
-const fetchPostCommentsAPIv2 = (postId, userId) => { //v2: có trả về trạng thái đã like bình luận của người dùng
-    const URL_BACKEND = `v1/api/posts/${postId}/comments`;
+const fetchPostCommentsAPIv2 = (postId, userId, page = 1, limit = 10) => { //v2: có trả về trạng thái đã like bình luận của người dùng
+    const URL_BACKEND = `v1/api/posts/${postId}/comments?page=${page}&limit=${limit}`;
     return axios.post(URL_BACKEND, { userId });
 }
 

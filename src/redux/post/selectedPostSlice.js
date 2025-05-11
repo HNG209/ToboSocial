@@ -27,6 +27,26 @@ export const fetchPostDetail = createAsyncThunk('posts/fetchPostDetail', async (
     }
 });
 
+export const fetchMoreComments = createAsyncThunk('posts/fetchMoreComments', async (_, { getState, rejectWithValue }) => {
+    try {
+        const state = getState();
+        const currentPage = state.selectedPost.page;
+        const postId = state.selectedPost.post._id;
+        const fetchMore = state.selectedPost.fetchMore;
+
+        if (!fetchMore) return { commentsResponse: [], nextPage: currentPage };
+
+        const nextPage = currentPage + 1;
+        // fetch comments
+        const commentsResponse = await fetchPostCommentsAPIv2(postId, getLocalStorageId(), nextPage)
+
+        return { commentsResponse, nextPage };
+    } catch (error) {
+        console.error('Error in fetching comments:', error.message);
+        return rejectWithValue(error.message);
+    }
+})
+
 
 export const fetchPost = createAsyncThunk('posts/fetchPost', async (postId, { getState, rejectWithValue }) => {
     try {
@@ -93,6 +113,9 @@ const selectedPostSlice = createSlice({
         comments: [], // danh sách bình luận của bài viết, đánh dấu đã like đối với người dùng hiện tại
         likers: [], // danh sách những người like bài viết
         status: 'idle', // Trạng thái tải dữ liệu
+        page: 1, // trang bình luận
+        fetchMore: true,
+        isLoadingMoreComments: false,
         error: null, // Lỗi nếu có
     },
     reducers: {},
@@ -103,6 +126,8 @@ const selectedPostSlice = createSlice({
             })
             // ===== Fetch Posts by User =====
             .addCase(fetchPostDetail.pending, (state) => {
+                state.comments = [];
+                state.page = 1;
                 state.status = 'loading'; // Đặt trạng thái thành loading
             })
             .addCase(fetchPostDetail.fulfilled, (state, action) => {
@@ -111,8 +136,38 @@ const selectedPostSlice = createSlice({
                 state.author = authorResponse;
                 state.comments = commentsResponse; // đã có trạng thái like của người dùng
                 state.likers = likersResponse.users;
+                state.page = 1;
+                state.fetchMore = true;
             })
             .addCase(fetchPostDetail.rejected, (state, action) => {
+                state.status = 'failed'; // Đặt trạng thái thành failed
+                state.error = action.payload; // Lưu lỗi nếu có
+            })
+
+            .addCase(fetchMoreComments.pending, (state) => {
+                state.isLoadingMoreComments = true;
+                state.status = 'loading'; // Đặt trạng thái thành loading
+            })
+            // fetch more comments(page > 1)
+            .addCase(fetchMoreComments.fulfilled, (state, action) => {
+                const { commentsResponse, nextPage } = action.payload;
+                
+                if (commentsResponse.length === 0) {
+                    state.isLoadingMoreComments = false;
+                    state.fetchMore = false;
+                    return;
+                }
+                
+                // Lọc các comment đã tồn tại (theo _id)
+                const existingIds = new Set(state.comments.map(c => c._id));
+                const uniqueNewComments = commentsResponse.filter(c => !existingIds.has(c._id));
+                
+                state.comments = [...state.comments, ...uniqueNewComments];
+                state.page = nextPage;
+                state.isLoadingMoreComments = false;
+                state.status = 'succeeded';
+            })
+            .addCase(fetchMoreComments.rejected, (state, action) => {
                 state.status = 'failed'; // Đặt trạng thái thành failed
                 state.error = action.payload; // Lưu lỗi nếu có
             })

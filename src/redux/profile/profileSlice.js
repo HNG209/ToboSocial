@@ -104,7 +104,6 @@ const profileSlice = createSlice({
             .addCase(fetchPostByUser.fulfilled, (state, action) => {
                 state.status = 'succeeded'; // Đặt trạng thái thành succeeded
                 state.posts = action.payload; // Gán danh sách bài viết từ API
-                console.log(action.payload)
             })
             .addCase(fetchPostByUser.rejected, (state, action) => {
                 state.status = 'failed'; // Đặt trạng thái thành failed

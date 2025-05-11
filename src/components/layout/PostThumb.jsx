@@ -6,6 +6,7 @@ import PostDetail from './PostDetail';
 import { useCallback, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { fetchPostDetail, fetchPost } from '../../redux/post/selectedPostSlice';
+import { Modal } from 'antd';
 
 export default function PostThumb({ post }) {
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -44,10 +45,13 @@ export default function PostThumb({ post }) {
                 </div>
             </div>
 
-            <PostDetail
-                open={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
-            />
+
+            <Modal open={isModalOpen} onCancel={() => setIsModalOpen(false)} footer={null} width="90vw" style={{ maxWidth: 1200 }} centered>
+                <PostDetail
+                    onClose={() => setIsModalOpen(false)}
+                />
+            </Modal>
+
         </>
     );
 }
