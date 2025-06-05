@@ -159,11 +159,13 @@ const PostDetail = ({ onClose }) => {
             className="h-[70vh] w-full flex items-center justify-center bg-black"
         >
             {media.type === 'image' ? (
-                <img
-                    src={media.url}
-                    alt="Post media"
-                    className="max-h-full max-w-full object-contain"
-                />
+                <div className="flex items-center justify-center w-full h-full">
+                    <img
+                        src={media.url}
+                        alt="Post media"
+                        className="max-h-full max-w-full object-contain"
+                    />
+                </div>
             ) : (
                 <div className="relative flex items-center justify-center w-full h-full">
                     <video
