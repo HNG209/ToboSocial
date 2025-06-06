@@ -1,6 +1,9 @@
 import { HeartFilled, HeartOutlined } from "@ant-design/icons"
 import { Avatar } from "antd"
-import { fetchRepliesComment } from "../../redux/post/selectedPostSlice";
+import { fetchRepliesComment, toggleCommentLike } from "../../redux/post/selectedPostSlice";
+import { useDispatch, useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
+import React, { use, useEffect, useState } from "react";
 
 const formatCommentTime = (createdAt) => {
     const now = new Date();
@@ -29,17 +32,28 @@ const formatCommentTime = (createdAt) => {
     });
 };
 
-export default function Comment({ comment, handleCommentReply, handleCancelReply }) {
+function CommentRefractor({ comment, handleCommentReply, handleCancelReply, replyToComment }) {
+    console.log('CommentRefractor render', comment._id);
     const dispatch = useDispatch();
     const navigate = useNavigate();
+    const comments = useSelector((state => state.selectedPost.comments));
+    const [replies, setReplies] = useState([]);
+
+    const isLiked = comments.find(c => c._id === comment._id)?.isLiked;
 
     const toggleCmtLike = (commentId) => {
         dispatch(toggleCommentLike(commentId))
     }
 
-    const handleCancelReply = () => {
-        setReplyToComment(null);
-    };
+    const handleReplyView = (commentId) => {
+        dispatch(fetchRepliesComment(commentId));
+    }
+
+    useEffect(() => {
+        // Lấy các bình luận trả lời từ Redux store
+        const commentReplies = comments.find(c => c._id === comment._id)?.replies || [];
+        setReplies(commentReplies);
+    }, [comments, dispatch]);
 
     const viewProfile = (userId) => {
         if (typeof onClose === 'function') {
@@ -52,7 +66,7 @@ export default function Comment({ comment, handleCommentReply, handleCancelReply
     }
 
     return (
-        <div className="mb-5 mt-2 ml-2 flex flex-col">
+        <div>
             <div className="flex items-center justify-between">
                 <div>
                     <Avatar
@@ -66,10 +80,10 @@ export default function Comment({ comment, handleCommentReply, handleCancelReply
                             className="w-full object-cover max-h-[600px]"
                         />
                     </Avatar>
-                    <span onClick={() => { viewProfile(comment?.user?._id) }} className="ml-2 font-semibold cursor-pointer hover:text-purple-800">{'@' + c?.user?.username}</span>
+                    <span onClick={() => { viewProfile(comment?.user?._id) }} className="ml-2 font-semibold cursor-pointer hover:text-purple-800">{'@' + comment?.user?.username}</span>
                     <span className="ml-1">{comment?.text}</span>
                 </div>
-                {comment?.isLiked ? (
+                {isLiked ? (
                     <HeartFilled
                         onClick={() => toggleCmtLike(comment._id)}
                         size={30}
@@ -77,7 +91,7 @@ export default function Comment({ comment, handleCommentReply, handleCancelReply
                     />
                 ) : (
                     <HeartOutlined
-                        onClick={() => toggleCmtLike(c._id)}
+                        onClick={() => toggleCmtLike(comment._id)}
                         size={30}
                         className="cursor-pointer text-lg mr-3"
                     />
@@ -85,17 +99,17 @@ export default function Comment({ comment, handleCommentReply, handleCancelReply
             </div>
             {/* Formatted comment time in English */}
             <span className="text-xs text-gray-500 ml-10">
-                {formatCommentTime(c.createdAt)}
+                {formatCommentTime(comment.createdAt)}
                 {
                     comment?.countReply > 0 &&
                     <span onClick={() => {
-                        dispatch(fetchRepliesComment(c._id))
+                        handleReplyView(comment._id);
                     }} className="text-xs text-gray-500 ml-2 cursor-pointer hover:text-blue-500">
                         {comment.countReply} repl{comment.countReply > 1 ? 'ies' : 'y'}
                     </span>
                 }
                 {
-                    replyToComment && replyToComment.commentId === c._id ?
+                    replyToComment && replyToComment.commentId === comment._id ?
                         <span onClick={handleCancelReply} className="text-xs text-red-500 ml-2 cursor-pointer hover:text-red-700">
                             cancel
                         </span> :
@@ -110,6 +124,25 @@ export default function Comment({ comment, handleCommentReply, handleCancelReply
                         </span>
                 }
             </span>
+            {
+                replies.length > 0 && replies.map(reply => (
+                    <div className="ml-5 mt-2" key={reply._id}>
+                        <CommentRefractor
+                            comment={reply}
+                            handleCommentReply={handleCommentReply}
+                            handleCancelReply={handleCancelReply}
+                            replyToComment={replyToComment}
+                        />
+                    </div>
+                ))
+            }
+
         </div>
     )
 }
+
+export default React.memo(CommentRefractor, (prevProps, nextProps) => {
+    // Chỉ render lại nếu comment khác nhau
+    return prevProps.comment._id === nextProps.comment._id &&
+        prevProps.replyToComment?.commentId === nextProps.replyToComment?.commentId;
+});

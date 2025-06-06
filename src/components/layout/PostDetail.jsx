@@ -12,6 +12,7 @@ import { getCurrentUser } from '../../redux/profile/profileSlice';
 import { createComment, fetchMoreComments, fetchPost, fetchPostDetail, fetchRepliesComment, toggleCommentLike, toggleLike } from '../../redux/post/selectedPostSlice';
 import { useNavigate, useParams } from 'react-router-dom';
 import { set } from 'lodash';
+import CommentRefractor from '../refractor/CommentRefractor';
 
 const NextArrow = ({ onClick }) => (
     <div className="absolute right-3 top-1/2 transform -translate-y-1/2 z-10 cursor-pointer text-white bg-black/50 p-1 rounded-full" onClick={onClick}>
@@ -24,33 +25,6 @@ const PrevArrow = ({ onClick }) => (
         <ChevronLeft size={24} />
     </div>
 );
-
-const formatCommentTime = (createdAt) => {
-    const now = new Date();
-    const created = new Date(createdAt);
-    const diffMs = now - created;
-    const diffSec = Math.floor(diffMs / 1000);
-    const diffMin = Math.floor(diffSec / 60);
-    const diffHr = Math.floor(diffMin / 60);
-    const diffDay = Math.floor(diffHr / 24);
-
-    if (diffDay < 30) {
-        if (diffDay >= 1) return `${diffDay} day${diffDay > 1 ? 's' : ''} ago`;
-        if (diffHr >= 1) return `${diffHr} hour${diffHr > 1 ? 's' : ''} ago`;
-        if (diffMin >= 1) return `${diffMin} minute${diffMin > 1 ? 's' : ''} ago`;
-        return 'Just now';
-    }
-
-    return created.toLocaleString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        hour: 'numeric',
-        minute: '2-digit',
-        hour12: true,
-        timeZoneName: 'short',
-    });
-};
 
 //get user from localStorage
 const userFromStorage = localStorage.getItem('user')
@@ -131,20 +105,6 @@ const PostDetail = () => {
 
     const togglePostLike = () => {
         dispatch(toggleLike(postDetail._id))
-    }
-
-    const toggleCmtLike = (commentId) => {
-        dispatch(toggleCommentLike(commentId))
-    }
-
-    const viewProfile = (userId) => {
-        if (typeof onClose === 'function') {
-            onClose();
-        }
-
-        if (userId === currentUserId) return;
-
-        navigate(`/profile/other/${userId}`)
     }
 
     const toggleMute = () => setMuted(!muted);
@@ -244,64 +204,13 @@ const PostDetail = () => {
                     {
                         status === 'loading' && comments.length === 0 ? <Skeleton active className='mt-2 ml-2' /> :
                             comments.map((c) => (
-                                <div key={c._id} className="mb-5 mt-2 ml-2 flex flex-col">
-                                    <div className="flex items-center justify-between">
-                                        <div>
-                                            <Avatar
-                                                size={30}
-                                                className="absolute top-0 left-0 z-10 m-4 cursor-pointer"
-                                                src={c?.user?.profile?.avatar || 'https://res.cloudinary.com/dwaldcj4v/image/upload/v1745215451/sodmg5jwxc8m2pho0i8r.jpg'}
-                                            >
-                                                <img
-                                                    src="https://i.pravatar.cc/150?u=user"
-                                                    alt="user"
-                                                    className="w-full object-cover max-h-[600px]"
-                                                />
-                                            </Avatar>
-                                            <span onClick={() => { viewProfile(c?.user?._id) }} className="ml-2 font-semibold cursor-pointer hover:text-purple-800">{'@' + c?.user?.username}</span>
-                                            <span className="ml-1">{c?.text}</span>
-                                        </div>
-                                        {c?.isLiked ? (
-                                            <HeartFilled
-                                                onClick={() => toggleCmtLike(c._id)}
-                                                size={30}
-                                                className="cursor-pointer text-lg mr-3"
-                                            />
-                                        ) : (
-                                            <HeartOutlined
-                                                onClick={() => toggleCmtLike(c._id)}
-                                                size={30}
-                                                className="cursor-pointer text-lg mr-3"
-                                            />
-                                        )}
-                                    </div>
-                                    {/* Formatted comment time in English */}
-                                    <span className="text-xs text-gray-500 ml-10">
-                                        {formatCommentTime(c.createdAt)}
-                                        {
-                                            c?.countReply > 0 &&
-                                            <span onClick={() => {
-                                                dispatch(fetchRepliesComment(c._id))
-                                            }} className="text-xs text-gray-500 ml-2 cursor-pointer hover:text-blue-500">
-                                                {c.countReply} repl{c.countReply > 1 ? 'ies' : 'y'}
-                                            </span>
-                                        }
-                                        {
-                                            replyToComment && replyToComment.commentId === c._id ?
-                                                <span onClick={handleCancelReply} className="text-xs text-red-500 ml-2 cursor-pointer hover:text-red-700">
-                                                    cancel
-                                                </span> :
-                                                <span onClick={() => {
-                                                    handleCommentReply({
-                                                        commentId: c._id,
-                                                        username: c.user.username,
-                                                        rootComment: c._id
-                                                    })
-                                                }} className="text-xs text-gray-500 ml-2 cursor-pointer hover:text-blue-500">
-                                                    reply
-                                                </span>
-                                        }
-                                    </span>
+                                <div className="mb-3 mt-2 ml-2 flex flex-col" key={c._id}>
+                                    <CommentRefractor
+                                        comment={c}
+                                        replyToComment={replyToComment}
+                                        handleCommentReply={handleCommentReply}
+                                        handleCancelReply={handleCancelReply}
+                                    />
                                 </div>
                             ))
 

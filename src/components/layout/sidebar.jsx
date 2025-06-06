@@ -80,9 +80,14 @@ const Sidebar = () => {
                             </div>
                         </Dropdown>
                     ) : (
-                        <NavLink
+                        <div
                             key={idx}
-                            to={item.to}
+                            onClick={() => {
+                                if (item.to) {
+                                    navigate(item.to);
+                                }
+                                item.label === "Create" && alert("Feature coming soon!")
+                            }}
                             className={({ isActive }) =>
                                 `flex items-center gap-2 hover:text-black transition-colors ${isActive ? "text-black font-semibold" : "text-gray-700"
                                 }`
@@ -90,7 +95,7 @@ const Sidebar = () => {
                         >
                             {item.icon}
                             <span className="hidden lg:inline">{item.label}</span>
-                        </NavLink>
+                        </div>
                     )
                 ))}
             </nav>

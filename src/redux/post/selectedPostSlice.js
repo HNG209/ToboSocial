@@ -107,10 +107,10 @@ export const toggleCommentLike = createAsyncThunk('posts/toggleCommentLike', asy
         const rs = await likeStatusAPIv2(commentId, getLocalStorageId(), 'comment');
 
         if (!rs.isLiked) {
-            return await likeAPIv2(commentId, getLocalStorageId(), 'comment');
+            return await { result: await likeAPIv2(commentId, getLocalStorageId(), 'comment'), root: rs.rootCommentId ? rs.rootCommentId : null };
         }
 
-        return await unlikeAPIv2(commentId, getLocalStorageId(), 'comment');
+        return await { result: await unlikeAPIv2(commentId, getLocalStorageId(), 'comment'), root: rs.rootCommentId ? rs.rootCommentId : null };
 
     } catch (error) {
         console.error('Error in fetching post detail:', error.message);
@@ -188,6 +188,20 @@ const selectedPostSlice = createSlice({
             //Create comment
             .addCase(createComment.fulfilled, (state, action) => {
                 state.comments = [...state.comments, action.payload];
+                // nếu trường rootComment tồn tại thì đây là bình luận trả lời, cập nhật lại bình luận gốc
+                if (action.payload.rootComment) {
+                    const rootCommentIndex = state.comments.findIndex(c => c._id === action.payload.rootComment);
+                    if (rootCommentIndex !== -1) {
+                        // state.comments[rootCommentIndex].replyCount = (state.comments[rootCommentIndex].replyCount || 0) + 1;
+                        //cập nhật thêm trường replies để chứa bình luận trả lời
+                        if (!state.comments[rootCommentIndex].replies) {
+                            state.comments[rootCommentIndex].replies = [action.payload];
+                        } else {
+                            state.comments[rootCommentIndex].replies = [...state.comments[rootCommentIndex].replies, action.payload];
+                        }
+                    }
+                }
+                state.error = null; // Reset error state
             })
             .addCase(createComment.rejected, (state, action) => {
                 state.error = action.payload;
@@ -205,7 +219,7 @@ const selectedPostSlice = createSlice({
                 // console.log(action.payload);
             })
 
-            //toggle like
+            //toggle post like
             .addCase(toggleLike.fulfilled, (state, action) => {
                 state.post.isLiked = action.payload.result.isLiked;
                 if (state.post) {
@@ -215,11 +229,28 @@ const selectedPostSlice = createSlice({
 
             //toggle comment like
             .addCase(toggleCommentLike.fulfilled, (state, action) => {
-                const { targetId, isLiked } = action.payload;
+                const { result, root } = action.payload;
 
-                const commentIndex = state.comments.findIndex(c => c._id === targetId);
-                if (commentIndex !== -1) {
-                    state.comments[commentIndex].isLiked = isLiked;
+                // nếu có root
+                if (root) {
+                    const rootCommentIndex = state.comments.findIndex(c => c._id === root);
+                    if (rootCommentIndex === -1) return;
+                    // nếu có bình luận trả lời
+                    if (!state.comments[rootCommentIndex].replies) return;
+                    // tìm id của bình luận trả lời qua trường result.targetId
+                    const replyIndex = state.comments[rootCommentIndex].replies.findIndex(r => r._id === result.targetId);
+                    // cập nhật trạng thái đã like của bình luận trả lời
+                    if (replyIndex !== -1) {
+                        state.comments[rootCommentIndex].replies[replyIndex].isLiked = result.isLiked;
+                    }
+
+                }
+                else {
+                    // nếu không có root, cập nhật trạng thái đã like của bình luận gốc
+                    const commentIndex = state.comments.findIndex(c => c._id === result.targetId);
+                    if (commentIndex !== -1) {
+                        state.comments[commentIndex].isLiked = result.isLiked;
+                    }
                 }
             })
     }
