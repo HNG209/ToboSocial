@@ -1,5 +1,5 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
-import { createCommentAPI, fetchPostAuthorAPI, fetchLikersAPIv2, fetchPostCommentsAPIv2, fetchPostDetailAPI, likeStatusAPIv2, likeAPIv2, unlikeAPIv2 } from "../../services/api.service";
+import { createCommentAPI, fetchPostAuthorAPI, fetchLikersAPIv2, fetchPostCommentsAPIv2, fetchPostDetailAPI, likeStatusAPIv2, likeAPIv2, unlikeAPIv2, fetchRepliesByCommentAPI } from "../../services/api.service";
 
 const getLocalStorageId = () => {
     //get user from localStorage
@@ -62,10 +62,23 @@ export const fetchPost = createAsyncThunk('posts/fetchPost', async (postId, { ge
     }
 });
 
-export const createComment = createAsyncThunk('posts/createComment', async ({ postId, text }, { rejectWithValue }) => {
+export const fetchRepliesComment = createAsyncThunk('posts/fetchRepliesComment', async (commentId, { rejectWithValue }) => {
+    try {
+        const response = await fetchRepliesByCommentAPI({ commentId, userId: getLocalStorageId() }); // Lấy bình luận trả lời
+        return { commentId, replies: response }; // Trả về commentId và danh sách bình luận trả lời
+    } catch (error) {
+        console.error('Error in fetching replies comment:', error.message);
+        return rejectWithValue(error.message);
+    }
+});
+
+export const createComment = createAsyncThunk('posts/createComment', async (comment, { rejectWithValue }) => {
     try {
 
-        const response = await createCommentAPI(postId, getLocalStorageId(), text);
+        const response = await createCommentAPI({
+            ...comment,
+            user: getLocalStorageId(), // Lấy userId từ localStorage
+        });
 
         return response;
     } catch (error) {
@@ -151,17 +164,17 @@ const selectedPostSlice = createSlice({
             // fetch more comments(page > 1)
             .addCase(fetchMoreComments.fulfilled, (state, action) => {
                 const { commentsResponse, nextPage } = action.payload;
-                
+
                 if (commentsResponse.length === 0) {
                     state.isLoadingMoreComments = false;
                     state.fetchMore = false;
                     return;
                 }
-                
+
                 // Lọc các comment đã tồn tại (theo _id)
                 const existingIds = new Set(state.comments.map(c => c._id));
                 const uniqueNewComments = commentsResponse.filter(c => !existingIds.has(c._id));
-                
+
                 state.comments = [...state.comments, ...uniqueNewComments];
                 state.page = nextPage;
                 state.isLoadingMoreComments = false;
@@ -178,6 +191,18 @@ const selectedPostSlice = createSlice({
             })
             .addCase(createComment.rejected, (state, action) => {
                 state.error = action.payload;
+            })
+
+            //fetch replies comment
+            .addCase(fetchRepliesComment.fulfilled, (state, action) => {
+                const { commentId, replies } = action.payload;
+                const commentIndex = state.comments.findIndex(c => c._id === commentId);
+                if (commentIndex !== -1) {
+                    state.comments[commentIndex].replies = replies;
+                    //thêm trường replyPage để quản lý phân trang của bình luận trả lời
+                    state.comments[commentIndex].replyPage = 1;
+                }
+                // console.log(action.payload);
             })
 
             //toggle like

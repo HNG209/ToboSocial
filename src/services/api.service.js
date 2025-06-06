@@ -38,9 +38,14 @@ const fetchPostAuthorAPI = (postId) => {
     return axios.get(URL_BACKEND);
 }
 
-const createCommentAPI = (postId, userId, text) => {
+const createCommentAPI = (comment) => {
     const URL_BACKEND = `/v1/api/comments`;
-    return axios.post(URL_BACKEND, { post: postId, user: userId, text });
+    return axios.post(URL_BACKEND, comment);
+}
+
+const fetchRepliesByCommentAPI = ({ commentId, userId }, page = 1, limit = 10) => {
+    const URL_BACKEND = `/v1/api/comments/${commentId}/replies?page=${page}&limit=${limit}`;
+    return axios.post(URL_BACKEND, { userId });
 }
 
 const updateCommentAPI = (commentId, text) => {
@@ -173,6 +178,7 @@ export {
     fetchPostCommentsAPI,
     fetchPostCommentsAPIv2,
     createCommentAPI,
+    fetchRepliesByCommentAPI,
     deleteCommentAPI,
     updateCommentAPI,
     likeCommentAPI,

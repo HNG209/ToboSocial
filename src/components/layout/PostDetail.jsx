@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, use } from 'react';
 import { Avatar, Modal } from 'antd';
 import { Heart, Send, MessageCircle, Bookmark, Volume2, VolumeX, ChevronLeft, ChevronRight } from 'lucide-react';
 import { HeartOutlined, HeartFilled } from '@ant-design/icons';
@@ -9,8 +9,9 @@ import 'slick-carousel/slick/slick.css';
 import 'slick-carousel/slick/slick-theme.css';
 import { useDispatch, useSelector } from 'react-redux';
 import { getCurrentUser } from '../../redux/profile/profileSlice';
-import { createComment, fetchMoreComments, fetchPost, fetchPostDetail, toggleCommentLike, toggleLike } from '../../redux/post/selectedPostSlice';
+import { createComment, fetchMoreComments, fetchPost, fetchPostDetail, fetchRepliesComment, toggleCommentLike, toggleLike } from '../../redux/post/selectedPostSlice';
 import { useNavigate, useParams } from 'react-router-dom';
+import { set } from 'lodash';
 
 const NextArrow = ({ onClick }) => (
     <div className="absolute right-3 top-1/2 transform -translate-y-1/2 z-10 cursor-pointer text-white bg-black/50 p-1 rounded-full" onClick={onClick}>
@@ -60,7 +61,7 @@ const userFromStorage = localStorage.getItem('user')
 const currentUserId = userFromStorage ? userFromStorage._id : null; // Lấy userId từ localStorage
 
 
-const PostDetail = ({ onClose }) => {
+const PostDetail = () => {
     const { postId } = useParams();
 
     const scrollContainerRef = useRef(null);
@@ -68,7 +69,8 @@ const PostDetail = ({ onClose }) => {
     const [muted, setMuted] = useState(true);
     const [comment, setComment] = useState('');
     const [comments, setComments] = useState([]);
-    const [isLiked, setIsLiked] = useState(false)
+    const [isLiked, setIsLiked] = useState(false);
+    const [replyToComment, setReplyToComment] = useState(null);
 
     const dispatch = useDispatch();
     const navigate = useNavigate();
@@ -105,6 +107,8 @@ const PostDetail = ({ onClose }) => {
     }, [postId])
 
     useEffect(() => {
+        console.log('PostDetail: postComments changed', postComments);
+        setReplyToComment(null); // Reset reply state when postDetail changes
         setComments(postComments)
     }, [postComments])
 
@@ -117,8 +121,10 @@ const PostDetail = ({ onClose }) => {
     const handleCommentPost = async () => {
         await dispatch(createComment(
             {
-                postId: postDetail._id,
-                text: comment
+                post: postDetail._id,
+                text: comment,
+                replyTo: replyToComment !== null ? replyToComment.commentId : null,
+                rootComment: replyToComment !== null ? replyToComment.rootComment : null
             }))
         setComment('')
     };
@@ -142,6 +148,14 @@ const PostDetail = ({ onClose }) => {
     }
 
     const toggleMute = () => setMuted(!muted);
+
+    const handleCommentReply = (comment) => {
+        setReplyToComment(comment);
+    }
+
+    const handleCancelReply = () => {
+        setReplyToComment(null);
+    };
 
     const sliderSettings = {
         dots: true,
@@ -264,6 +278,29 @@ const PostDetail = ({ onClose }) => {
                                     {/* Formatted comment time in English */}
                                     <span className="text-xs text-gray-500 ml-10">
                                         {formatCommentTime(c.createdAt)}
+                                        {
+                                            c?.countReply > 0 &&
+                                            <span onClick={() => {
+                                                dispatch(fetchRepliesComment(c._id))
+                                            }} className="text-xs text-gray-500 ml-2 cursor-pointer hover:text-blue-500">
+                                                {c.countReply} repl{c.countReply > 1 ? 'ies' : 'y'}
+                                            </span>
+                                        }
+                                        {
+                                            replyToComment && replyToComment.commentId === c._id ?
+                                                <span onClick={handleCancelReply} className="text-xs text-red-500 ml-2 cursor-pointer hover:text-red-700">
+                                                    cancel
+                                                </span> :
+                                                <span onClick={() => {
+                                                    handleCommentReply({
+                                                        commentId: c._id,
+                                                        username: c.user.username,
+                                                        rootComment: c._id
+                                                    })
+                                                }} className="text-xs text-gray-500 ml-2 cursor-pointer hover:text-blue-500">
+                                                    reply
+                                                </span>
+                                        }
                                     </span>
                                 </div>
                             ))
@@ -301,7 +338,17 @@ const PostDetail = ({ onClose }) => {
                             type="text"
                             value={comment}
                             onChange={handleCommentChange}
-                            placeholder="Add a comment..."
+                            placeholder={
+                                replyToComment ?
+                                    "reply to " + (replyToComment?.username ? `@${replyToComment?.username}` : '') :
+                                    "Add a comment..."
+                            }
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' && comment.trim()) {
+                                    handleCommentPost();
+                                    setReplyToComment(null); // Reset reply after posting
+                                }
+                            }}
                             className="flex-1 outline-none"
                         />
                         <button
