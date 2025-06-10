@@ -9,7 +9,7 @@ import 'slick-carousel/slick/slick.css';
 import 'slick-carousel/slick/slick-theme.css';
 import { useDispatch, useSelector } from 'react-redux';
 import { getCurrentUser } from '../../redux/profile/profileSlice';
-import { createComment, fetchMoreComments, fetchPost, fetchPostDetail, fetchRepliesComment, toggleCommentLike, toggleLike } from '../../redux/post/selectedPostSlice';
+import { clearReplyComments, createComment, fetchMoreComments, fetchPost, fetchPostDetail, fetchRepliesComment, toggleCommentLike, toggleLike } from '../../redux/post/selectedPostSlice';
 import { useNavigate, useParams } from 'react-router-dom';
 import { set } from 'lodash';
 import CommentRefractor from '../refractor/CommentRefractor';
@@ -81,7 +81,6 @@ const PostDetail = () => {
     }, [postId])
 
     useEffect(() => {
-        console.log('PostDetail: postComments changed', postComments);
         setReplyToComment(null); // Reset reply state when postDetail changes
         setComments(postComments)
     }, [postComments])
@@ -93,6 +92,7 @@ const PostDetail = () => {
     const handleCommentChange = (e) => setComment(e.target.value);
 
     const handleCommentPost = async () => {
+        console.log('Posting comment:', replyToComment);
         await dispatch(createComment(
             {
                 post: postDetail._id,
@@ -111,6 +111,14 @@ const PostDetail = () => {
 
     const handleCommentReply = (comment) => {
         setReplyToComment(comment);
+    }
+
+    const handleViewMoreReplies = (commentId) => {
+        dispatch(fetchRepliesComment(commentId));
+    };
+
+    const handleShowLessReplies = (commentId) => {
+        dispatch(clearReplyComments(commentId));
     }
 
     const handleCancelReply = () => {
@@ -211,6 +219,34 @@ const PostDetail = () => {
                                         handleCommentReply={handleCommentReply}
                                         handleCancelReply={handleCancelReply}
                                     />
+                                    {
+                                        c.replies && c.replies.length > 0 &&
+                                        c.replies.map((reply) => (
+                                            <div className="ml-5 mt-2" key={reply._id}>
+                                                <CommentRefractor
+                                                    comment={reply}
+                                                    replyToComment={replyToComment}
+                                                    handleCommentReply={handleCommentReply}
+                                                    handleCancelReply={handleCancelReply}
+                                                />
+                                            </div>
+                                        ))
+                                    }
+                                    {
+                                        c.replies && c.replies.length > 0 && c.replyPage !== -1 &&
+                                            <div className='text-xs text-gray-500 mt-2 text-center cursor-pointer hover:text-blue-500'
+                                                onClick={() => handleViewMoreReplies(c._id)}>
+                                                view more replies...
+                                            </div>
+                                    }
+                                    {
+                                        c.replyPage === -1 &&
+                                            <div
+                                                onClick={() => handleShowLessReplies(c._id)}
+                                                className='text-xs text-gray-500 mt-2 text-center cursor-pointer hover:text-blue-500'>
+                                                show less
+                                            </div>
+                                    }
                                 </div>
                             ))
 
