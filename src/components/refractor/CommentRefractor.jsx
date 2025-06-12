@@ -1,4 +1,4 @@
-import { HeartFilled, HeartOutlined } from "@ant-design/icons"
+import { EllipsisOutlined, HeartFilled, HeartOutlined } from "@ant-design/icons"
 import { Avatar } from "antd"
 import { fetchRepliesComment, toggleCommentLike } from "../../redux/post/selectedPostSlice";
 import { useDispatch, useSelector } from "react-redux";
@@ -33,6 +33,7 @@ const formatCommentTime = (createdAt) => {
 };
 
 function CommentRefractor({ comment, handleCommentReply, handleCancelReply, replyToComment }) {
+    const [option, setOption] = useState(false);
     // console.log('CommentRefractor render', comment);
     const dispatch = useDispatch();
     const navigate = useNavigate();
@@ -56,7 +57,14 @@ function CommentRefractor({ comment, handleCommentReply, handleCancelReply, repl
     }
 
     return (
-        <div>
+        <div
+            onMouseEnter={() => {
+                setOption(true);
+            }}
+            onMouseLeave={() => {
+                setOption(false);
+            }}
+            className="hover:bg-gray-100 rounded-lg relative p-2 shadow-sm mb-2 transition-all duration-200 ease-in-out">
             <div className="flex items-center justify-between">
                 <div>
                     <Avatar
@@ -113,6 +121,10 @@ function CommentRefractor({ comment, handleCommentReply, handleCancelReply, repl
                         }} className="text-xs text-gray-500 ml-2 cursor-pointer hover:text-blue-500">
                             reply
                         </span>
+                }
+                {
+                    option &&
+                    <EllipsisOutlined className="ml-2 hover:text-blue-500 hover:cursor-pointer" />
                 }
             </span>
         </div>

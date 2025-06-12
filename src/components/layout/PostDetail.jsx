@@ -184,18 +184,22 @@ const PostDetail = () => {
             {/* Right (desktop) or Bottom (mobile) */}
             <div className="w-full lg:w-2/5 flex flex-col p-4 text-sm max-h-[50vh] lg:max-h-full overflow-y-auto">
                 {/* User Info */}
-                <div className="flex items-center space-x-2 font-semibold mb-3 border-b pb-2">
-                    <Avatar size={30} className="absolute top-0 left-0 z-10 m-4" src={userData?.profile?.avatar || 'https://res.cloudinary.com/dwaldcj4v/image/upload/v1745215451/sodmg5jwxc8m2pho0i8r.jpg'}>
-                        <img src="https://i.pravatar.cc/150?u=user" alt="user" className="w-full object-cover max-h-[600px]" />
-                    </Avatar>
-                    <span className='ml-2'>{userData?.fullName}</span>
+                <div className="flex items-center space-x-2 mb-3 border-b pb-2">
+                    <div>
+                        <Avatar size={30} className="absolute top-0 left-0 z-10 m-4" src={userData?.profile?.avatar || 'https://res.cloudinary.com/dwaldcj4v/image/upload/v1745215451/sodmg5jwxc8m2pho0i8r.jpg'}>
+                            <img src="https://i.pravatar.cc/150?u=user" alt="user" className="w-full object-cover max-h-[600px]" />
+                        </Avatar>
+                        <span className="ml-2 font-semibold">{'@' + userData?.username}</span>
+                        {/* <span className='ml-2'>{`- ${userData?.fullName}`}</span> */}
+                        <span className="ml-1">{postDetail.caption}</span>
+                    </div>
                 </div>
 
                 <div
                     ref={scrollContainerRef}
                     onScroll={handleScroll}
                     className="space-y-2 mb-4 h-100 sm:max-h-80 md:max-h-96 overflow-y-auto">
-                    <Avatar
+                    {/* <Avatar
                         size={30}
                         className="absolute top-0 left-0 z-10 m-4"
                         src={userData?.profile?.avatar || 'https://res.cloudinary.com/dwaldcj4v/image/upload/v1745215451/sodmg5jwxc8m2pho0i8r.jpg'}
@@ -207,12 +211,12 @@ const PostDetail = () => {
                         />
                     </Avatar>
                     <span className="ml-2 font-semibold">{'@' + userData?.username}</span>
-                    <span className="ml-1">{postDetail.caption}</span>
+                    <span className="ml-1">{postDetail.caption}</span> */}
 
                     {
                         status === 'loading' && comments.length === 0 ? <Skeleton active className='mt-2 ml-2' /> :
                             comments.map((c) => (
-                                <div className="mb-3 mt-2 ml-2 flex flex-col" key={c._id}>
+                                <div className="flex flex-col" key={c._id}>
                                     <CommentRefractor
                                         comment={c}
                                         replyToComment={replyToComment}
@@ -222,7 +226,7 @@ const PostDetail = () => {
                                     {
                                         c.replies && c.replies.length > 0 &&
                                         c.replies.map((reply) => (
-                                            <div className="ml-5 mt-2" key={reply._id}>
+                                            <div className="ml-5" key={reply._id}>
                                                 <CommentRefractor
                                                     comment={reply}
                                                     replyToComment={replyToComment}
@@ -234,18 +238,18 @@ const PostDetail = () => {
                                     }
                                     {
                                         c.replies && c.replies.length > 0 && c.replyPage !== -1 &&
-                                            <div className='text-xs text-gray-500 mt-2 text-center cursor-pointer hover:text-blue-500'
-                                                onClick={() => handleViewMoreReplies(c._id)}>
-                                                view more replies...
-                                            </div>
+                                        <div className='text-xs text-gray-500 mt-2 text-center cursor-pointer hover:text-blue-500'
+                                            onClick={() => handleViewMoreReplies(c._id)}>
+                                            view more replies...
+                                        </div>
                                     }
                                     {
                                         c.replyPage === -1 &&
-                                            <div
-                                                onClick={() => handleShowLessReplies(c._id)}
-                                                className='text-xs text-gray-500 mt-2 text-center cursor-pointer hover:text-blue-500'>
-                                                show less
-                                            </div>
+                                        <div
+                                            onClick={() => handleShowLessReplies(c._id)}
+                                            className='text-xs text-gray-500 mt-2 text-center cursor-pointer hover:text-blue-500'>
+                                            show less
+                                        </div>
                                     }
                                 </div>
                             ))

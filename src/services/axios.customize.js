@@ -1,12 +1,18 @@
 import axios from "axios";
 
 const instance = axios.create({
-    baseURL: import.meta.env.VITE_BACKEND_URL
+    baseURL: import.meta.env.VITE_BACKEND_URL,
+    withCredentials: true // nếu dùng cookie refreshToken
 });
 
-instance.interceptors.request.use(function (config) {
+instance.interceptors.request.use(config => {
+    // tự động thêm accessToken vào header Authorization nếu có
+    const token = localStorage.getItem('accessToken');
+    if (token) {
+        config.headers['Authorization'] = `Bearer ${token}`;
+    }
     return config;
-}, function (error) {
+}, error => {
     return Promise.reject(error);
 });
 

@@ -11,9 +11,9 @@ export const fetchPostComments = createAsyncThunk('posts/fetchPostComments', asy
     }
 });
 
-export const createComment = createAsyncThunk('posts/createComment', async ({ postId, userId, text }, { rejectWithValue }) => {
+export const createComment = createAsyncThunk('posts/createComment', async ({ postId, text }, { rejectWithValue }) => {
     try {
-        const response = await createCommentAPI(postId, userId, text);
+        const response = await createCommentAPI(postId, text);
         return response; //payload
     } catch (error) {
         console.error('Error in createComment:', error.message);

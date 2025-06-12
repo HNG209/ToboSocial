@@ -10,12 +10,19 @@ import {
 import { Dropdown, Menu, notification } from "antd";
 import { NavLink, useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
-import { logout } from "../../redux/auth/authSlice";
+import { getCurrentUser, logout } from "../../redux/auth/authSlice";
 import tobologo from "../../assets/logo.png"
+import { useEffect } from "react";
 
 const Sidebar = () => {
     const dispatch = useDispatch();
     const navigate = useNavigate();
+
+    // reload trang -> fetch các thông tin cần thiết vào redux state ở đây
+    useEffect(() => {
+        console.log('fetching')
+        dispatch(getCurrentUser());
+    }, [])
 
     const handleLogout = async () => {
         try {

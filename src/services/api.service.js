@@ -28,9 +28,9 @@ const fetchPostCommentsAPI = (postId) => {
     return axios.get(URL_BACKEND);
 }
 
-const fetchPostCommentsAPIv2 = (postId, userId, page = 1, limit = 10) => { //v2: có trả về trạng thái đã like bình luận của người dùng
+const fetchPostCommentsAPIv2 = (postId, page = 1, limit = 10) => { //v2: có trả về trạng thái đã like bình luận của người dùng
     const URL_BACKEND = `v1/api/posts/${postId}/comments?page=${page}&limit=${limit}`;
-    return axios.post(URL_BACKEND, { userId });
+    return axios.get(URL_BACKEND);
 }
 
 const fetchPostAuthorAPI = (postId) => {
@@ -78,8 +78,13 @@ const fetchPostByUserAPI = (authorId, page = 1, limit = 10) => {
     return axios.get(URL_BACKEND);
 }
 
-const fetchPostByUserAPIV2 = (authorId, userId, page = 1, limit = 10) => {
-    const URL_BACKEND = `/v1/api/users/${authorId}/posts?userId=${userId}&page=${page}&limit=${limit}`;
+const fetchPostByUserAPIV2 = (authorId, page = 1, limit = 10) => {
+    const URL_BACKEND = `/v1/api/users/${authorId}/posts?page=${page}&limit=${limit}`;
+    return axios.get(URL_BACKEND);
+}
+
+const fetchProfilePosts = (page = 1, limit = 10) => {
+    const URL_BACKEND = `/v1/api/user/profile/posts?page=${page}&limit=${limit}`;
     return axios.get(URL_BACKEND);
 }
 
@@ -90,11 +95,15 @@ const getUserAPI = (userId) => {
 }
 
 // v2 get user
-const getUserAPIv2 = (userId, currentUserId) => {
-    const URL_BACKEND = `/v1/api/users/${userId}?currentUserId=${currentUserId}`;
+const getUserAPIv2 = (userId) => {
+    const URL_BACKEND = `/v1/api/users/${userId}`;
     return axios.get(URL_BACKEND);
 }
 
+const getUserProfile = () => { // nếu userId = null thì fallback về
+    const URL_BACKEND = `/v1/api/user/profile`;
+    return axios.get(URL_BACKEND);
+}
 
 //update user api
 const updateUserAPI = (data) => {
@@ -113,9 +122,9 @@ const unlikeAPIv2 = (postId, userId, onModel) => {
     return axios.post(URL_BACKEND, { userId, onModel })
 }
 
-const likeStatusAPIv2 = (postId, userId, onModel) => {
-    const URL_BACKEND = `/v1/api/is-liked/${postId}`;
-    return axios.post(URL_BACKEND, { userId, onModel })
+const likeStatusAPIv2 = (postId, onModel) => {
+    const URL_BACKEND = `/v1/api/is-liked/${onModel}/${postId}`;
+    return axios.get(URL_BACKEND)
 }
 
 const fetchLikersAPIv2 = (postId, onModel) => {
@@ -186,8 +195,10 @@ export {
     fetchPostDetailAPI,
     fetchPostByUserAPI,
     fetchPostByUserAPIV2,
+    fetchProfilePosts,
     getUserAPI,
     getUserAPIv2,
+    getUserProfile,
     updateUserAPI,
     fetchPostAuthorAPI,
     likeAPIv2,

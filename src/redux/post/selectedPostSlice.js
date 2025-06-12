@@ -16,7 +16,7 @@ export const fetchPostDetail = createAsyncThunk('posts/fetchPostDetail', async (
         // fetch author
         const authorResponse = await fetchPostAuthorAPI(postId)
         // fetch comments
-        const commentsResponse = await fetchPostCommentsAPIv2(postId, getLocalStorageId())
+        const commentsResponse = await fetchPostCommentsAPIv2(postId)
         // fetch post likers
         const likersResponse = await fetchLikersAPIv2(postId, 'post')
 
@@ -38,7 +38,7 @@ export const fetchMoreComments = createAsyncThunk('posts/fetchMoreComments', asy
 
         const nextPage = currentPage + 1;
         // fetch comments
-        const commentsResponse = await fetchPostCommentsAPIv2(postId, getLocalStorageId(), nextPage)
+        const commentsResponse = await fetchPostCommentsAPIv2(postId, nextPage)
 
         return { commentsResponse, nextPage };
     } catch (error) {
@@ -223,7 +223,7 @@ const selectedPostSlice = createSlice({
                     return; // nếu là bình luận trả lời thì không cần thêm vào danh sách bình luận gốc
                 }
 
-                state.comments = [...state.comments, action.payload]; // nếu không có trường rootComment thì đây là bình luận gốc, thêm vào danh sách bình luận
+                state.comments = [action.payload, ...state.comments]; // nếu không có trường rootComment thì đây là bình luận gốc, thêm vào danh sách bình luận
                 state.post.commentCount = (state.post.commentCount || 0) + 1; // tăng số lượng bình luận của bài viết
 
                 state.error = null; // Reset error state
@@ -232,6 +232,9 @@ const selectedPostSlice = createSlice({
                 state.error = action.payload;
             })
 
+            .addCase(fetchRepliesComment.pending, (state) => {
+                state.status = 'loading'; // Đặt trạng thái thành loading
+            })
             //fetch replies comment
             .addCase(fetchRepliesComment.fulfilled, (state, action) => {
                 const { commentId, replies, replyPage } = action.payload;
@@ -254,6 +257,8 @@ const selectedPostSlice = createSlice({
 
                 //thêm trường replyPage để quản lý phân trang của bình luận trả lời
                 state.comments[commentIndex].replyPage = replyPage + 1; // tăng replyPage lên 1 để lần sau gọi sẽ lấy trang tiếp theo
+
+                state.status = 'succeeded'; // Đặt trạng thái thành succeeded
             })
 
             //toggle post like

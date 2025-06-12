@@ -7,21 +7,38 @@ import {
     followUserAPI,
     unfollowUserAPI
 } from '../../services/user.service';
+import { getUserProfile } from '../../services/api.service';
 
-const userFromStorage = localStorage.getItem('user')
-    ? JSON.parse(localStorage.getItem('user'))
-    : null;
 
-// Login
-export const login = createAsyncThunk('auth/login', async ({ email, password }, { rejectWithValue }) => {
+export const getCurrentUser = createAsyncThunk(
+    'user/getCurrentUser',
+    async (_, { rejectWithValue }) => {
+        try {
+            return await getUserProfile();
+        } catch (error) {
+            console.error('Error in getUserById:', error.message);
+            return rejectWithValue(error.message);
+        }
+    }
+);
+
+export const login = createAsyncThunk('auth/login', async ({ username, password }, { rejectWithValue }) => {
     try {
-        const response = await loginAPI(email, password);
-        localStorage.setItem('user', JSON.stringify(response));
-        return response;
+        const response = await loginAPI(username, password);
+        console.log('Login response:', response);
+        const { accessToken, user } = response;
+
+        // Lưu accessToken vào localStorage hoặc Redux state
+        localStorage.setItem('accessToken', accessToken);
+        // localStorage.setItem('user', JSON.stringify(user));
+
+        return { user, accessToken }; // gán vào state nếu cần
+
     } catch (error) {
         return rejectWithValue(error.message || 'Login failed');
     }
 });
+
 
 // Follow
 export const followUser = createAsyncThunk('auth/followUser', async ({ targetUserId, currentUserId }, { rejectWithValue }) => {
@@ -80,7 +97,8 @@ export const forgotPassword = createAsyncThunk('auth/forgotPassword', async (ema
 const authSlice = createSlice({
     name: 'auth',
     initialState: {
-        user: userFromStorage,
+        user: null,
+        accessToken: localStorage.getItem('accessToken') || null,
         status: 'idle',
         error: null,
     },
@@ -93,13 +111,20 @@ const authSlice = createSlice({
             })
             .addCase(login.fulfilled, (state, action) => {
                 state.status = 'succeeded';
-                state.user = action.payload;
+                state.user = action.payload.user; // Cập nhật state.user với user object từ API
+                state.accessToken = action.payload.accessToken; // Cập nhật accessToken
                 state.error = null;
             })
             .addCase(login.rejected, (state, action) => {
                 state.status = 'failed';
                 state.error = action.payload;
             })
+
+            // dùng để refetch user hiện tại khi trang reload
+            .addCase(getCurrentUser.fulfilled, (state, action) => {
+                state.user = action.payload;
+            })
+
             .addCase(followUser.pending, (state) => {
                 state.status = 'loading';
                 state.error = null;
@@ -113,6 +138,8 @@ const authSlice = createSlice({
                 state.status = 'failed';
                 state.error = action.payload;
             })
+
+
             .addCase(unfollowUser.pending, (state) => {
                 state.status = 'loading';
                 state.error = null;
@@ -126,6 +153,8 @@ const authSlice = createSlice({
                 state.status = 'failed';
                 state.error = action.payload;
             })
+
+
             .addCase(register.pending, (state) => {
                 state.status = 'loading';
                 state.error = null;
@@ -139,6 +168,8 @@ const authSlice = createSlice({
                 state.status = 'failed';
                 state.error = action.payload;
             })
+
+
             .addCase(logout.pending, (state) => {
                 state.status = 'loading';
                 state.error = null;
@@ -152,6 +183,8 @@ const authSlice = createSlice({
                 state.status = 'failed';
                 state.error = action.payload;
             })
+
+
             .addCase(forgotPassword.pending, (state) => {
                 state.status = 'loading';
                 state.error = null;
