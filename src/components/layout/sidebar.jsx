@@ -12,10 +12,14 @@ import { NavLink, useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { logout } from "../../redux/auth/authSlice";
 import tobologo from "../../assets/logo.png"
+import PostModal from "../PostModal";
+import { useState } from "react";
 
 const Sidebar = () => {
     const dispatch = useDispatch();
     const navigate = useNavigate();
+    const [isOpen, setIsOpen] = useState(false);
+
 
     const handleLogout = async () => {
         try {
@@ -58,6 +62,7 @@ const Sidebar = () => {
 
     return (
         <aside className="hidden md:flex flex-col w-16 lg:w-64 bg-white border-r shadow-sm p-4">
+            <PostModal isOpen={isOpen} onClose={() => setIsOpen(false)}></PostModal>
             <div className="w-[200px] h-[80px] overflow-hidden">
                 <NavLink to="/">
                     <img
@@ -86,7 +91,7 @@ const Sidebar = () => {
                                 if (item.to) {
                                     navigate(item.to);
                                 }
-                                item.label === "Create" && alert("Feature coming soon!")
+                                item.label === "Create" && setIsOpen(true)
                             }}
                             className={({ isActive }) =>
                                 `flex items-center gap-2 hover:text-black transition-colors ${isActive ? "text-black font-semibold" : "text-gray-700"
