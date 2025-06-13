@@ -2,13 +2,13 @@
 import axios from "./axios.customize";
 
 // Đăng nhập
-const loginAPI = (email, password) => {
-    const URL_BACKEND = `/v1/api/users/login`;
-    return axios.post(URL_BACKEND, { email, password });
+const loginAPI = async (username, password) => {
+    const URL_BACKEND = `/v1/api/login`;
+    return axios.post(URL_BACKEND, { username, password });
 };
 
 // Đăng ký
-const registerAPI = (username, email, password, fullName) => {
+const registerAPI = async (username, email, password, fullName) => {
     const URL_BACKEND = `/v1/api/users/register`;
     return axios.post(URL_BACKEND, { username, email, password, fullName });
 };

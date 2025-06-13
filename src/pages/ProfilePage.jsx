@@ -6,6 +6,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useDispatch, useSelector } from "react-redux";
 import { fetchPostByUser, followUser, getCurrentUser, setStatus, unfollowUser } from "../redux/profile/profileSlice";
 import { EditOutlined, MenuOutlined, SendOutlined, SettingOutlined, UserAddOutlined } from "@ant-design/icons";
+import { fetchProfilePosts } from "../services/api.service";
 
 const ProfilePage = () => {
     const { id } = useParams();
@@ -20,10 +21,10 @@ const ProfilePage = () => {
     const status = useSelector((state) => state.profile.status);
 
     useEffect(() => {
-        if (status === 'idle') {
-            dispatch(getCurrentUser({ id }));
-            dispatch(fetchPostByUser({ id, page: 1, limit: 10 }));
-        }
+        if (status !== 'idle') return;
+        dispatch(getCurrentUser({ id }));
+        dispatch(fetchPostByUser({ id, page: 1, limit: 10 }));
+        return;
     }, [dispatch, status]);
 
     useEffect(() => {

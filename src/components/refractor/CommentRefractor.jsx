@@ -1,4 +1,4 @@
-import { HeartFilled, HeartOutlined } from "@ant-design/icons"
+import { EllipsisOutlined, HeartFilled, HeartOutlined } from "@ant-design/icons"
 import { Avatar } from "antd"
 import { fetchRepliesComment, toggleCommentLike } from "../../redux/post/selectedPostSlice";
 import { useDispatch, useSelector } from "react-redux";
@@ -33,13 +33,10 @@ const formatCommentTime = (createdAt) => {
 };
 
 function CommentRefractor({ comment, handleCommentReply, handleCancelReply, replyToComment }) {
-    console.log('CommentRefractor render', comment._id);
+    const [option, setOption] = useState(false);
+    // console.log('CommentRefractor render', comment);
     const dispatch = useDispatch();
     const navigate = useNavigate();
-    const comments = useSelector((state => state.selectedPost.comments));
-    const [replies, setReplies] = useState([]);
-
-    const isLiked = comments.find(c => c._id === comment._id)?.isLiked;
 
     const toggleCmtLike = (commentId) => {
         dispatch(toggleCommentLike(commentId))
@@ -48,12 +45,6 @@ function CommentRefractor({ comment, handleCommentReply, handleCancelReply, repl
     const handleReplyView = (commentId) => {
         dispatch(fetchRepliesComment(commentId));
     }
-
-    useEffect(() => {
-        // Lấy các bình luận trả lời từ Redux store
-        const commentReplies = comments.find(c => c._id === comment._id)?.replies || [];
-        setReplies(commentReplies);
-    }, [comments, dispatch]);
 
     const viewProfile = (userId) => {
         if (typeof onClose === 'function') {
@@ -66,7 +57,14 @@ function CommentRefractor({ comment, handleCommentReply, handleCancelReply, repl
     }
 
     return (
-        <div>
+        <div
+            onMouseEnter={() => {
+                setOption(true);
+            }}
+            onMouseLeave={() => {
+                setOption(false);
+            }}
+            className="hover:bg-gray-100 rounded-lg relative p-2 shadow-sm mb-2 transition-all duration-200 ease-in-out">
             <div className="flex items-center justify-between">
                 <div>
                     <Avatar
@@ -83,19 +81,23 @@ function CommentRefractor({ comment, handleCommentReply, handleCancelReply, repl
                     <span onClick={() => { viewProfile(comment?.user?._id) }} className="ml-2 font-semibold cursor-pointer hover:text-purple-800">{'@' + comment?.user?.username}</span>
                     <span className="ml-1">{comment?.text}</span>
                 </div>
-                {isLiked ? (
-                    <HeartFilled
-                        onClick={() => toggleCmtLike(comment._id)}
-                        size={30}
-                        className="cursor-pointer text-lg mr-3"
-                    />
-                ) : (
-                    <HeartOutlined
-                        onClick={() => toggleCmtLike(comment._id)}
-                        size={30}
-                        className="cursor-pointer text-lg mr-3"
-                    />
-                )}
+                <div className="flex flex-col justify-between items-center mr-2 h-full">
+                    {comment.isLiked ? (
+                        <HeartFilled
+                            onClick={() => toggleCmtLike(comment._id)}
+                            size={30}
+                            className="cursor-pointer text-lg"
+                        />
+                    ) : (
+                        <HeartOutlined
+                            onClick={() => toggleCmtLike(comment._id)}
+                            size={30}
+                            className="cursor-pointer text-lg"
+                        />
+                    )}
+                    <p className="text-xs text-gray-500 w-10 text-center">{comment?.likeCount || 0}</p>
+                </div>
+
             </div>
             {/* Formatted comment time in English */}
             <span className="text-xs text-gray-500 ml-10">
@@ -117,26 +119,18 @@ function CommentRefractor({ comment, handleCommentReply, handleCancelReply, repl
                             handleCommentReply({
                                 commentId: comment._id,
                                 username: comment.user.username,
-                                rootComment: comment._id
+                                // nếu trả lời bình luận gốc thì rootComment là id của bình luận gốc, nếu trả lời bình luận con thì rootComment là root của bình luận con
+                                rootComment: comment.rootComment === null ? comment._id : comment.rootComment
                             })
                         }} className="text-xs text-gray-500 ml-2 cursor-pointer hover:text-blue-500">
                             reply
                         </span>
                 }
+                {
+                    option &&
+                    <EllipsisOutlined className="ml-2 hover:text-blue-500 hover:cursor-pointer" />
+                }
             </span>
-            {
-                replies.length > 0 && replies.map(reply => (
-                    <div className="ml-5 mt-2" key={reply._id}>
-                        <CommentRefractor
-                            comment={reply}
-                            handleCommentReply={handleCommentReply}
-                            handleCancelReply={handleCancelReply}
-                            replyToComment={replyToComment}
-                        />
-                    </div>
-                ))
-            }
-
         </div>
     )
 }
@@ -144,5 +138,8 @@ function CommentRefractor({ comment, handleCommentReply, handleCancelReply, repl
 export default React.memo(CommentRefractor, (prevProps, nextProps) => {
     // Chỉ render lại nếu comment khác nhau
     return prevProps.comment._id === nextProps.comment._id &&
+        prevProps.comment?.likeCount === nextProps.comment?.likeCount &&
+        prevProps.comment.countReply === nextProps.comment.countReply &&
+        prevProps.comment.isLiked === nextProps.comment.isLiked &&
         prevProps.replyToComment?.commentId === nextProps.replyToComment?.commentId;
 });

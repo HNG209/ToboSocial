@@ -16,7 +16,7 @@ export const fetchPostDetail = createAsyncThunk('posts/fetchPostDetail', async (
         // fetch author
         const authorResponse = await fetchPostAuthorAPI(postId)
         // fetch comments
-        const commentsResponse = await fetchPostCommentsAPIv2(postId, getLocalStorageId())
+        const commentsResponse = await fetchPostCommentsAPIv2(postId)
         // fetch post likers
         const likersResponse = await fetchLikersAPIv2(postId, 'post')
 
@@ -38,7 +38,7 @@ export const fetchMoreComments = createAsyncThunk('posts/fetchMoreComments', asy
 
         const nextPage = currentPage + 1;
         // fetch comments
-        const commentsResponse = await fetchPostCommentsAPIv2(postId, getLocalStorageId(), nextPage)
+        const commentsResponse = await fetchPostCommentsAPIv2(postId, nextPage)
 
         return { commentsResponse, nextPage };
     } catch (error) {
@@ -62,10 +62,23 @@ export const fetchPost = createAsyncThunk('posts/fetchPost', async (postId, { ge
     }
 });
 
-export const fetchRepliesComment = createAsyncThunk('posts/fetchRepliesComment', async (commentId, { rejectWithValue }) => {
+export const fetchRepliesComment = createAsyncThunk('posts/fetchRepliesComment', async (commentId, { getState, rejectWithValue }) => {
     try {
-        const response = await fetchRepliesByCommentAPI({ commentId, userId: getLocalStorageId() }); // Lấy bình luận trả lời
-        return { commentId, replies: response }; // Trả về commentId và danh sách bình luận trả lời
+        // lấy replyPage từ state, nếu không có thì mặc định là 1
+        const state = getState();
+        const replyPage = state.selectedPost.comments.find(c => c._id === commentId)?.replyPage || 1;
+        if (replyPage === -1) {
+            return { commentId, replies: [], replyPage: -1 }; // nếu không có bình luận trả lời thì trả về mảng rỗng
+        }
+
+        const response = await fetchRepliesByCommentAPI({ commentId, userId: getLocalStorageId() }, replyPage); // Lấy bình luận trả lời
+
+        // nếu không có bình luận trả lời thì trả về mảng rỗng
+        if (!response || response.length === 0) {
+            return { commentId, replies: [], replyPage: -1 };
+        }
+
+        return { commentId, replies: response, replyPage }; // Trả về commentId và danh sách bình luận trả lời
     } catch (error) {
         console.error('Error in fetching replies comment:', error.message);
         return rejectWithValue(error.message);
@@ -89,12 +102,12 @@ export const createComment = createAsyncThunk('posts/createComment', async (comm
 
 export const toggleLike = createAsyncThunk('posts/toggleLike', async (postId, { rejectWithValue }) => {
     try {
-        const rs = await likeStatusAPIv2(postId, getLocalStorageId(), 'post');
+        const rs = await likeStatusAPIv2(postId, 'post');
         if (!rs.isLiked) {
-            return { postId, result: await likeAPIv2(postId, getLocalStorageId(), 'post') };
+            return { postId, result: await likeAPIv2(postId, 'post') };
         }
 
-        return { postId, result: await unlikeAPIv2(postId, getLocalStorageId(), 'post') };
+        return { postId, result: await unlikeAPIv2(postId, 'post') };
 
     } catch (error) {
         console.error('Error in fetching post detail:', error.message);
@@ -104,13 +117,13 @@ export const toggleLike = createAsyncThunk('posts/toggleLike', async (postId, { 
 
 export const toggleCommentLike = createAsyncThunk('posts/toggleCommentLike', async (commentId, { rejectWithValue }) => {
     try {
-        const rs = await likeStatusAPIv2(commentId, getLocalStorageId(), 'comment');
+        const rs = await likeStatusAPIv2(commentId, 'comment');
 
         if (!rs.isLiked) {
-            return await { result: await likeAPIv2(commentId, getLocalStorageId(), 'comment'), root: rs.rootCommentId ? rs.rootCommentId : null };
+            return await { result: await likeAPIv2(commentId, 'comment'), root: rs.rootCommentId ? rs.rootCommentId : null };
         }
 
-        return await { result: await unlikeAPIv2(commentId, getLocalStorageId(), 'comment'), root: rs.rootCommentId ? rs.rootCommentId : null };
+        return await { result: await unlikeAPIv2(commentId, 'comment'), root: rs.rootCommentId ? rs.rootCommentId : null };
 
     } catch (error) {
         console.error('Error in fetching post detail:', error.message);
@@ -131,7 +144,16 @@ const selectedPostSlice = createSlice({
         isLoadingMoreComments: false,
         error: null, // Lỗi nếu có
     },
-    reducers: {},
+    reducers: {
+        clearReplyComments: (state, action) => {
+            // tìm kiếm bình luận gốc trong danh sách bình luận
+            const commentIndex = state.comments.findIndex(c => c._id === action.payload);
+            if (commentIndex !== -1) {
+                state.comments[commentIndex].replies = []; // xóa bình luận trả lời của bình luận gốc
+                state.comments[commentIndex].replyPage = 1; // reset lại trang bình luận trả lời
+            }
+        }
+    },
     extraReducers: (builder) => {
         builder
             .addCase(fetchPost.fulfilled, (state, action) => {
@@ -168,6 +190,7 @@ const selectedPostSlice = createSlice({
                 if (commentsResponse.length === 0) {
                     state.isLoadingMoreComments = false;
                     state.fetchMore = false;
+                    state.status = 'succeeded';
                     return;
                 }
 
@@ -187,36 +210,56 @@ const selectedPostSlice = createSlice({
 
             //Create comment
             .addCase(createComment.fulfilled, (state, action) => {
-                state.comments = [...state.comments, action.payload];
                 // nếu trường rootComment tồn tại thì đây là bình luận trả lời, cập nhật lại bình luận gốc
                 if (action.payload.rootComment) {
                     const rootCommentIndex = state.comments.findIndex(c => c._id === action.payload.rootComment);
-                    if (rootCommentIndex !== -1) {
-                        // state.comments[rootCommentIndex].replyCount = (state.comments[rootCommentIndex].replyCount || 0) + 1;
-                        //cập nhật thêm trường replies để chứa bình luận trả lời
-                        if (!state.comments[rootCommentIndex].replies) {
-                            state.comments[rootCommentIndex].replies = [action.payload];
-                        } else {
-                            state.comments[rootCommentIndex].replies = [...state.comments[rootCommentIndex].replies, action.payload];
-                        }
+                    if (rootCommentIndex === -1) return;
+                    //cập nhật thêm trường replies để chứa bình luận trả lời
+                    if (!state.comments[rootCommentIndex].replies) {
+                        state.comments[rootCommentIndex].replies = [action.payload];
+                    } else {
+                        state.comments[rootCommentIndex].replies = [action.payload, ...state.comments[rootCommentIndex].replies];
                     }
+                    state.comments[rootCommentIndex].countReply = (state.comments[rootCommentIndex].countReply || 0) + 1;
+                    return; // nếu là bình luận trả lời thì không cần thêm vào danh sách bình luận gốc
                 }
+
+                state.comments = [action.payload, ...state.comments]; // nếu không có trường rootComment thì đây là bình luận gốc, thêm vào danh sách bình luận
+                state.post.commentCount = (state.post.commentCount || 0) + 1; // tăng số lượng bình luận của bài viết
+
                 state.error = null; // Reset error state
             })
             .addCase(createComment.rejected, (state, action) => {
                 state.error = action.payload;
             })
 
+            .addCase(fetchRepliesComment.pending, (state) => {
+                state.status = 'loading'; // Đặt trạng thái thành loading
+            })
             //fetch replies comment
             .addCase(fetchRepliesComment.fulfilled, (state, action) => {
-                const { commentId, replies } = action.payload;
+                const { commentId, replies, replyPage } = action.payload;
                 const commentIndex = state.comments.findIndex(c => c._id === commentId);
-                if (commentIndex !== -1) {
-                    state.comments[commentIndex].replies = replies;
-                    //thêm trường replyPage để quản lý phân trang của bình luận trả lời
-                    state.comments[commentIndex].replyPage = 1;
+
+                if (commentIndex === -1) return; // nếu không tìm thấy bình luận thì không cần cập nhật
+
+                // nếu replyPage là -1 thì không có bình luận trả lời, không cần cập nhật
+                if (replies.length === 0 || replyPage === -1) {
+                    state.comments[commentIndex].replyPage = -1; // đánh dấu không có bình luận trả lời
+                    return;
                 }
-                // console.log(action.payload);
+
+                state.comments[commentIndex].replies = [...(state.comments[commentIndex].replies || []), ...replies]; // cập nhật bình luận trả lời
+                // // loại bỏ các bình luận trùng lặp trong replies
+                const uniqueReplies = Array.from(new Set(state.comments[commentIndex].replies.map(r => r._id)))
+                    .map(id => state.comments[commentIndex].replies.find(r => r._id === id));
+                state.comments[commentIndex].replies = uniqueReplies; // cập nhật lại bình luận trả lời với các bình luận không trùng lặp
+                // state.comments[commentIndex].countReply = (state.comments[commentIndex].countReply || 0) + replies.length; // cập nhật số lượng bình luận trả lời
+
+                //thêm trường replyPage để quản lý phân trang của bình luận trả lời
+                state.comments[commentIndex].replyPage = replyPage + 1; // tăng replyPage lên 1 để lần sau gọi sẽ lấy trang tiếp theo
+
+                state.status = 'succeeded'; // Đặt trạng thái thành succeeded
             })
 
             //toggle post like
@@ -256,4 +299,5 @@ const selectedPostSlice = createSlice({
     }
 })
 
+export const { clearReplyComments } = selectedPostSlice.actions;
 export default selectedPostSlice.reducer;

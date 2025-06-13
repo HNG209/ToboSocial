@@ -8,7 +8,7 @@ import { login } from '../redux/auth/authSlice';
 function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
-    email: '',
+    username: '',
     password: '',
   });
   const [showModal, setShowModal] = useState(false);
@@ -17,6 +17,7 @@ function LoginPage() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { status, error } = useSelector((state) => state.auth);
+  const user = useSelector((state) => state.auth.user);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -27,18 +28,18 @@ function LoginPage() {
     e.preventDefault();
     setModalMessage('');
 
-    if (!formData.email || !formData.password) {
-      setModalMessage('Vui lòng nhập đầy đủ email và mật khẩu');
+    if (!formData.username || !formData.password) {
+      setModalMessage('Vui lòng nhập đầy đủ username và mật khẩu');
       setShowModal(true);
       return;
     }
 
     try {
       const result = await dispatch(
-        login({ email: formData.email, password: formData.password })
+        login({ username: formData.username, password: formData.password })
       ).unwrap();
-      // Kiểm tra vai trò từ result
-      const userRole = result?.user?.role || result?.role || 'user';
+
+      const userRole = user?.role || result?.role || 'user';
       if (userRole === 'banned') {
         setModalMessage('Tài khoản bị khóa, không thể đăng nhập.');
         setShowModal(true);
@@ -91,10 +92,10 @@ function LoginPage() {
           <form onSubmit={handleSubmit} className="space-y-4 w-full max-w-xs">
             <div className="space-y-2">
               <input
-                type="email"
-                name="email"
-                placeholder="Email"
-                value={formData.email}
+                type="text"
+                name="username"
+                placeholder="username or email"
+                // value={formData.email}
                 onChange={handleChange}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
                 required

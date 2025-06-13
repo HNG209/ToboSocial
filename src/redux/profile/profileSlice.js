@@ -1,4 +1,4 @@
-import { fetchPostByUserAPI, fetchPostByUserAPIV2, followUserAPI, getUserAPI, getUserAPIv2, unfollowUserAPI, updateUserAPI } from "../../services/api.service";
+import { fetchPostByUserAPI, fetchPostByUserAPIV2, fetchProfilePosts, followUserAPI, getUserAPI, getUserAPIv2, getUserProfile, unfollowUserAPI, updateUserAPI } from "../../services/api.service";
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { toggleLike } from "../post/selectedPostSlice";
 
@@ -15,10 +15,10 @@ const getLocalStorageId = () => {
 export const fetchPostByUser = createAsyncThunk(
     'posts/fetchPostByUser',
     async ({ id, page, limit }, { rejectWithValue }) => {
-        const resolvedId = id ?? getLocalStorageId(); // Nếu id != null/undefined thì dùng id, ngược lại dùng userId từ storage
         try {
-            const response = await fetchPostByUserAPIV2(resolvedId, getLocalStorageId(), page, limit);
-            return response;
+            if (id)
+                return await fetchPostByUserAPIV2(id, page, limit);
+            return await fetchProfilePosts(page, limit);
         } catch (error) {
             console.error('Error in fetchPostByUser:', error.message);
             return rejectWithValue(error.message);
@@ -29,17 +29,17 @@ export const fetchPostByUser = createAsyncThunk(
 export const getCurrentUser = createAsyncThunk(
     'user/getCurrentUser',
     async ({ id }, { rejectWithValue }) => {
-        const resolvedId = id ?? getLocalStorageId();
         try {
-            const response = await getUserAPIv2(resolvedId, getLocalStorageId());
-            return response;
+            if (id) {
+                return await getUserAPIv2(id);
+            }
+            return await getUserProfile();
         } catch (error) {
             console.error('Error in getUserById:', error.message);
             return rejectWithValue(error.message);
         }
     }
 );
-
 
 //update user by id
 export const updateUser = createAsyncThunk('user/updateUser', async (data, { rejectWithValue }) => {
@@ -90,7 +90,7 @@ const profileSlice = createSlice({
     },
     extraReducers: (builder) => {
         builder
-            .addCase(toggleLike.fulfilled, (state, action) => {                
+            .addCase(toggleLike.fulfilled, (state, action) => {
                 const post = state.posts.find(p => p._id === action.payload.postId);
                 if (post) {
                     post.isLiked = action.payload.result.isLiked;
