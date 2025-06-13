@@ -112,14 +112,14 @@ const updateUserAPI = (data) => {
 }
 
 //like API v2
-const likeAPIv2 = (postId, userId, onModel) => {
+const likeAPIv2 = (postId, onModel) => {
     const URL_BACKEND = `/v1/api/like/${postId}`;
-    return axios.post(URL_BACKEND, { userId, onModel })
+    return axios.post(URL_BACKEND, { onModel })
 }
 
-const unlikeAPIv2 = (postId, userId, onModel) => {
+const unlikeAPIv2 = (postId, onModel) => {
     const URL_BACKEND = `/v1/api/unlike/${postId}`;
-    return axios.post(URL_BACKEND, { userId, onModel })
+    return axios.post(URL_BACKEND, { onModel })
 }
 
 const likeStatusAPIv2 = (postId, onModel) => {

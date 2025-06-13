@@ -81,19 +81,23 @@ function CommentRefractor({ comment, handleCommentReply, handleCancelReply, repl
                     <span onClick={() => { viewProfile(comment?.user?._id) }} className="ml-2 font-semibold cursor-pointer hover:text-purple-800">{'@' + comment?.user?.username}</span>
                     <span className="ml-1">{comment?.text}</span>
                 </div>
-                {comment.isLiked ? (
-                    <HeartFilled
-                        onClick={() => toggleCmtLike(comment._id)}
-                        size={30}
-                        className="cursor-pointer text-lg mr-3"
-                    />
-                ) : (
-                    <HeartOutlined
-                        onClick={() => toggleCmtLike(comment._id)}
-                        size={30}
-                        className="cursor-pointer text-lg mr-3"
-                    />
-                )}
+                <div className="flex flex-col justify-between items-center mr-2 h-full">
+                    {comment.isLiked ? (
+                        <HeartFilled
+                            onClick={() => toggleCmtLike(comment._id)}
+                            size={30}
+                            className="cursor-pointer text-lg"
+                        />
+                    ) : (
+                        <HeartOutlined
+                            onClick={() => toggleCmtLike(comment._id)}
+                            size={30}
+                            className="cursor-pointer text-lg"
+                        />
+                    )}
+                    <p className="text-xs text-gray-500 w-10 text-center">{comment?.likeCount || 0}</p>
+                </div>
+
             </div>
             {/* Formatted comment time in English */}
             <span className="text-xs text-gray-500 ml-10">
@@ -134,6 +138,7 @@ function CommentRefractor({ comment, handleCommentReply, handleCancelReply, repl
 export default React.memo(CommentRefractor, (prevProps, nextProps) => {
     // Chỉ render lại nếu comment khác nhau
     return prevProps.comment._id === nextProps.comment._id &&
+        prevProps.comment?.likeCount === nextProps.comment?.likeCount &&
         prevProps.comment.countReply === nextProps.comment.countReply &&
         prevProps.comment.isLiked === nextProps.comment.isLiked &&
         prevProps.replyToComment?.commentId === nextProps.replyToComment?.commentId;

@@ -102,12 +102,12 @@ export const createComment = createAsyncThunk('posts/createComment', async (comm
 
 export const toggleLike = createAsyncThunk('posts/toggleLike', async (postId, { rejectWithValue }) => {
     try {
-        const rs = await likeStatusAPIv2(postId, getLocalStorageId(), 'post');
+        const rs = await likeStatusAPIv2(postId, 'post');
         if (!rs.isLiked) {
-            return { postId, result: await likeAPIv2(postId, getLocalStorageId(), 'post') };
+            return { postId, result: await likeAPIv2(postId, 'post') };
         }
 
-        return { postId, result: await unlikeAPIv2(postId, getLocalStorageId(), 'post') };
+        return { postId, result: await unlikeAPIv2(postId, 'post') };
 
     } catch (error) {
         console.error('Error in fetching post detail:', error.message);
@@ -117,13 +117,13 @@ export const toggleLike = createAsyncThunk('posts/toggleLike', async (postId, { 
 
 export const toggleCommentLike = createAsyncThunk('posts/toggleCommentLike', async (commentId, { rejectWithValue }) => {
     try {
-        const rs = await likeStatusAPIv2(commentId, getLocalStorageId(), 'comment');
+        const rs = await likeStatusAPIv2(commentId, 'comment');
 
         if (!rs.isLiked) {
-            return await { result: await likeAPIv2(commentId, getLocalStorageId(), 'comment'), root: rs.rootCommentId ? rs.rootCommentId : null };
+            return await { result: await likeAPIv2(commentId, 'comment'), root: rs.rootCommentId ? rs.rootCommentId : null };
         }
 
-        return await { result: await unlikeAPIv2(commentId, getLocalStorageId(), 'comment'), root: rs.rootCommentId ? rs.rootCommentId : null };
+        return await { result: await unlikeAPIv2(commentId, 'comment'), root: rs.rootCommentId ? rs.rootCommentId : null };
 
     } catch (error) {
         console.error('Error in fetching post detail:', error.message);
@@ -190,6 +190,7 @@ const selectedPostSlice = createSlice({
                 if (commentsResponse.length === 0) {
                     state.isLoadingMoreComments = false;
                     state.fetchMore = false;
+                    state.status = 'succeeded';
                     return;
                 }
 
