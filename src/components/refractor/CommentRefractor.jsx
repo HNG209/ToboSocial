@@ -32,11 +32,13 @@ const formatCommentTime = (createdAt) => {
     });
 };
 
-function CommentRefractor({ comment, handleCommentReply, handleCancelReply, replyToComment }) {
+function CommentRefractor({ comment, handleCommentReply, handleCancelReply, replyToComment, onClose }) {
     const [option, setOption] = useState(false);
     // console.log('CommentRefractor render', comment);
     const dispatch = useDispatch();
     const navigate = useNavigate();
+
+    const authUserId = useSelector(state => state.auth.user._id)
 
     const toggleCmtLike = (commentId) => {
         dispatch(toggleCommentLike(commentId))
@@ -50,10 +52,12 @@ function CommentRefractor({ comment, handleCommentReply, handleCancelReply, repl
         if (typeof onClose === 'function') {
             onClose();
         }
-
-        if (userId === currentUserId) return;
-
-        navigate(`/profile/other/${userId}`)
+        if (userId === authUserId){
+            navigate('/profile')
+            return;
+        }
+        // if (userId === currentUserId) return;
+        navigate(`/profile/${userId}`)
     }
 
     return (

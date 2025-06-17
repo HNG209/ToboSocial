@@ -12,24 +12,33 @@ const ProfilePage = () => {
     const { id } = useParams();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [modalType, setModalType] = useState(''); // 'self' | 'other'
+    const [userData, setUserData] = useState(null);
 
     const navigate = useNavigate();
     const dispatch = useDispatch();
 
     const posts = useSelector((state) => state.profile.posts);
-    const userData = useSelector((state) => state.profile.user);
+    const authUser = useSelector((state) => state.auth.user); // fetch ở sidebar khi refresh
+    const profileUser = useSelector((state) => state.profile.user); // fetch khi có id
     const status = useSelector((state) => state.profile.status);
 
     useEffect(() => {
         if (status !== 'idle') return;
-        dispatch(getCurrentUser({ id }));
         dispatch(fetchPostByUser({ id, page: 1, limit: 10 }));
+        if (!id) return;
+        dispatch(getCurrentUser({ id }));
         return;
     }, [dispatch, status]);
 
     useEffect(() => {
+        if (!authUser && !profileUser) return;
+
+        setUserData(id ? profileUser : authUser);
+    }, [authUser, profileUser, id]);
+
+    useEffect(() => {
         dispatch(setStatus('idle'))
-    }, [id, userData?._id]);
+    }, [id]);
 
     const showModal = (type) => {
         setModalType(type); // 'self' or 'other'
@@ -51,12 +60,27 @@ const ProfilePage = () => {
     return (
         <>
             <div className="relative flex flex-col items-center justify-center w-full bg-gray-50 mt-2">
-                <Avatar size={120} className="absolute top-0 left-0 z-10 m-4" src={userData?.profile?.avatar || 'https://res.cloudinary.com/dwaldcj4v/image/upload/v1745215451/sodmg5jwxc8m2pho0i8r.jpg'}>
-                    <img src="https://i.pravatar.cc/150?u=user" alt="user" className="w-full object-cover max-h-[600px]" />
+                <Avatar
+                    className="border-2 border-white shadow-lg"
+                    size={{ xs: 90, sm: 90, md: 100, lg: 120, xl: 140, xxl: 160 }}
+                    src={userData?.profile?.avatar || 'https://res.cloudinary.com/...'}
+                >
+                    <img
+                        src="https://i.pravatar.cc/150?u=user"
+                        alt="user"
+                        className="w-full h-full object-cover"
+                    />
                 </Avatar>
-                <div className="flex flex-col items-center justify-center p-4 rounded-lg w-full max-w-md mx-auto">
-                    <h1 className="text-2xl font-bold">{userData?.fullName}</h1>
-                    <a href="#" className="text-purple-700 hover:text-gray-500">{`@${userData?.username}`}</a>
+
+
+                <div className="flex flex-col items-center justify-center mt-2 rounded-lg w-full max-w-md mx-auto">
+                    <h1 className="text-lg sm:text-xl md:text-2xl font-semibold break-words">
+                        {userData?.fullName}
+                    </h1>
+                    <p className="text-xs sm:text-sm md:text-base text-purple-700 hover:text-gray-500 break-words">
+                        @{userData?.username}
+                    </p>
+
                     <div className="flex items-center justify-center w-full mt-4">
                         <div className="mr-4">
                             <a href="#" className="font-semibold hover:text-gray-500">Followers: </a>
@@ -71,21 +95,37 @@ const ProfilePage = () => {
                             <span className="text-gray-500">{userData?.postCount}</span>
                         </div>
                     </div>
-                    <div>
+                    <div className="flex w-full max-w-xs gap-2 mt-4 flex-wrap justify-center">
                         {
                             id === undefined ? (
-                                <Button type="primary" danger className="mt-4" size="large" onClick={() => showModal('self')}>
-                                    <EditOutlined />
-                                    Edit profile
+                                <Button
+                                    type="primary"
+                                    danger
+                                    icon={<EditOutlined />}
+                                    className="flex-1 min-w-[70px] max-w-[160px] text-sm !h-9"
+                                    size="middle"
+                                    onClick={() => showModal('self')}
+                                >
+                                    Edit
                                 </Button>
                             ) : userData?.isFollowedByCurrentUser ? (
-                                <Button danger className="mt-4" size="large" onClick={() => showModal('other')}>
-                                    <MenuOutlined />
+                                <Button
+                                    danger
+                                    icon={<MenuOutlined />}
+                                    className="flex-1 min-w-[70px] max-w-[160px] text-sm !h-9"
+                                    size="middle"
+                                    onClick={() => showModal('other')}
+                                >
                                     Followed
                                 </Button>
                             ) : (
-                                <Button onClick={() => handleUserFollow(id)} type="primary" className="mt-4" size="large">
-                                    <UserAddOutlined />
+                                <Button
+                                    onClick={() => handleUserFollow(id)}
+                                    icon={<UserAddOutlined />}
+                                    type="primary"
+                                    className="flex-1 min-w-[70px] max-w-[160px] text-sm !h-9"
+                                    size="middle"
+                                >
                                     Follow
                                 </Button>
                             )
@@ -93,18 +133,27 @@ const ProfilePage = () => {
 
                         {
                             id === undefined ? (
-                                <Button type="default" className="mt-4 ml-2" size="large">
-                                    <SettingOutlined />
+                                <Button
+                                    type="default"
+                                    icon={<SettingOutlined />}
+                                    className="flex-1 min-w-[70px] max-w-[160px] text-sm !h-9"
+                                    size="middle"
+                                >
                                     Settings
                                 </Button>
                             ) : (
-                                <Button type="default" className="mt-4 ml-2" size="large">
-                                    <SendOutlined rotate={-45} />
+                                <Button
+                                    type="default"
+                                    icon={<SendOutlined rotate={-45} />}
+                                    className="flex-1 min-w-[70px] max-w-[160px] text-sm !h-9"
+                                    size="middle"
+                                >
                                     Message
                                 </Button>
                             )
                         }
                     </div>
+
                     <p className="text-gray-500 mt-2">{userData?.profile?.bio}</p>
                 </div>
             </div>

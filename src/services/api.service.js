@@ -68,6 +68,11 @@ const deleteCommentAPI = (commentId) => {
     return axios.delete(URL_BACKEND, { data: { id: commentId } });
 }
 
+const deletePostAPI = (postId) => {
+    const URL_BACKEND = `/v1/api/posts/${postId}`;
+    return axios.delete(URL_BACKEND)
+}
+
 const fetchPostDetailAPI = (postId) => {
     const URL_BACKEND = `/v1/api/posts/${postId}`;
     return axios.get(URL_BACKEND);
@@ -79,7 +84,7 @@ const fetchPostByUserAPI = (authorId, page = 1, limit = 10) => {
 }
 
 const fetchPostByUserAPIV2 = (authorId, page = 1, limit = 10) => {
-    const URL_BACKEND = `/v1/api/users/${authorId}/posts?page=${page}&limit=${limit}`;
+    const URL_BACKEND = `/v1/api/user/${authorId}/posts?page=${page}&limit=${limit}`;
     return axios.get(URL_BACKEND);
 }
 
@@ -139,15 +144,15 @@ const counLikeAPIv2 = (postId, onModel) => {
 
 //follow API
 // Follow người dùng
-const followUserAPI = (subjectId, followingId) => {
-    const URL_BACKEND = `v1/api/follow`;
-    return axios.post(URL_BACKEND, { subjectId, followingId });
+const followUserAPI = (followingId) => {
+    const URL_BACKEND = `v1/api/follow/${followingId}`;
+    return axios.post(URL_BACKEND);
 };
 
 // Unfollow người dùng
-const unfollowUserAPI = (subjectId, followingId) => {
-    const URL_BACKEND = `v1/api/unfollow`;
-    return axios.post(URL_BACKEND, { subjectId, followingId });
+const unfollowUserAPI = (followingId) => {
+    const URL_BACKEND = `v1/api/unfollow/${followingId}`;
+    return axios.delete(URL_BACKEND);
 };
 
 // Lấy danh sách người đang được user follow
@@ -189,6 +194,7 @@ export {
     createCommentAPI,
     fetchRepliesByCommentAPI,
     deleteCommentAPI,
+    deletePostAPI,
     updateCommentAPI,
     likeCommentAPI,
     unlikeCommentAPI,

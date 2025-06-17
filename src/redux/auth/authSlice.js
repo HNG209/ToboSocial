@@ -10,11 +10,12 @@ import {
 import { getUserProfile } from '../../services/api.service';
 
 
-export const getCurrentUser = createAsyncThunk(
-    'user/getCurrentUser',
+export const getAuthUser = createAsyncThunk(
+    'user/getAuthUser',
     async (_, { rejectWithValue }) => {
         try {
-            return await getUserProfile();
+            const rs = await getUserProfile();
+            return rs;
         } catch (error) {
             console.error('Error in getUserById:', error.message);
             return rejectWithValue(error.message);
@@ -121,7 +122,7 @@ const authSlice = createSlice({
             })
 
             // dùng để refetch user hiện tại khi trang reload
-            .addCase(getCurrentUser.fulfilled, (state, action) => {
+            .addCase(getAuthUser.fulfilled, (state, action) => {
                 state.user = action.payload;
             })
 

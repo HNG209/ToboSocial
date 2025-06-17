@@ -1,16 +1,6 @@
 import { fetchPostByUserAPI, fetchPostByUserAPIV2, fetchProfilePosts, followUserAPI, getUserAPI, getUserAPIv2, getUserProfile, unfollowUserAPI, updateUserAPI } from "../../services/api.service";
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { toggleLike } from "../post/selectedPostSlice";
-
-const getLocalStorageId = () => {
-    //get user from localStorage
-    const userFromStorage = localStorage.getItem('user')
-        ? JSON.parse(localStorage.getItem('user'))
-        : null;
-
-    //get user by id in localStorage
-    return userFromStorage ? userFromStorage._id : null; // Lấy userId từ localStorage
-}
+import { deletePost, toggleLike } from "../post/selectedPostSlice";
 
 export const fetchPostByUser = createAsyncThunk(
     'posts/fetchPostByUser',
@@ -30,10 +20,7 @@ export const getCurrentUser = createAsyncThunk(
     'user/getCurrentUser',
     async ({ id }, { rejectWithValue }) => {
         try {
-            if (id) {
-                return await getUserAPIv2(id);
-            }
-            return await getUserProfile();
+            return await getUserAPIv2(id);
         } catch (error) {
             console.error('Error in getUserById:', error.message);
             return rejectWithValue(error.message);
@@ -54,7 +41,7 @@ export const updateUser = createAsyncThunk('user/updateUser', async (data, { rej
 
 export const followUser = createAsyncThunk('user/followUser', async (id, { rejectWithValue }) => {
     try {
-        const response = await followUserAPI(getLocalStorageId(), id);
+        const response = await followUserAPI(id);
         return response;
     } catch (error) {
         console.error('Error in followUser:', error.message);
@@ -64,7 +51,7 @@ export const followUser = createAsyncThunk('user/followUser', async (id, { rejec
 
 export const unfollowUser = createAsyncThunk('user/unfollowUser', async (id, { rejectWithValue }) => {
     try {
-        const response = await unfollowUserAPI(getLocalStorageId(), id);
+        const response = await unfollowUserAPI(id);
         return response;
     } catch (error) {
         console.error('Error in unfollowUser:', error.message);
@@ -90,6 +77,10 @@ const profileSlice = createSlice({
     },
     extraReducers: (builder) => {
         builder
+            .addCase(deletePost.fulfilled, (state, action) => {
+                state.posts = state.posts.filter(p => p._id !== action.payload.postId)
+            })
+
             .addCase(toggleLike.fulfilled, (state, action) => {
                 const post = state.posts.find(p => p._id === action.payload.postId);
                 if (post) {

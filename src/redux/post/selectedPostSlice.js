@@ -1,5 +1,5 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
-import { createCommentAPI, fetchPostAuthorAPI, fetchLikersAPIv2, fetchPostCommentsAPIv2, fetchPostDetailAPI, likeStatusAPIv2, likeAPIv2, unlikeAPIv2, fetchRepliesByCommentAPI } from "../../services/api.service";
+import { createCommentAPI, fetchPostAuthorAPI, fetchLikersAPIv2, fetchPostCommentsAPIv2, fetchPostDetailAPI, likeStatusAPIv2, likeAPIv2, unlikeAPIv2, fetchRepliesByCommentAPI, deletePostAPI } from "../../services/api.service";
 
 const getLocalStorageId = () => {
     //get user from localStorage
@@ -125,6 +125,19 @@ export const toggleCommentLike = createAsyncThunk('posts/toggleCommentLike', asy
 
         return await { result: await unlikeAPIv2(commentId, 'comment'), root: rs.rootCommentId ? rs.rootCommentId : null };
 
+    } catch (error) {
+        console.error('Error in fetching post detail:', error.message);
+        return rejectWithValue(error.message);
+    }
+});
+
+export const deletePost = createAsyncThunk('posts/deletePost', async (_, { getState, rejectWithValue }) => {
+    try {
+        const state = getState();
+        const postId = state.selectedPost.post._id;
+        const rs = await deletePostAPI(postId);
+
+        return { rs, postId };
     } catch (error) {
         console.error('Error in fetching post detail:', error.message);
         return rejectWithValue(error.message);
@@ -295,6 +308,9 @@ const selectedPostSlice = createSlice({
                         state.comments[commentIndex].isLiked = result.isLiked;
                     }
                 }
+            })
+
+            .addCase(deletePost.fulfilled, (state, action) => {
             })
     }
 })

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, use } from 'react';
 import { Avatar, Modal } from 'antd';
 import { Heart, Send, MessageCircle, Bookmark, Volume2, VolumeX, ChevronLeft, ChevronRight } from 'lucide-react';
-import { HeartOutlined, HeartFilled } from '@ant-design/icons';
+import { HeartOutlined, HeartFilled, EllipsisOutlined } from '@ant-design/icons';
 import { Skeleton, Spin } from 'antd';
 
 import Slider from 'react-slick';
@@ -9,7 +9,7 @@ import 'slick-carousel/slick/slick.css';
 import 'slick-carousel/slick/slick-theme.css';
 import { useDispatch, useSelector } from 'react-redux';
 import { getCurrentUser } from '../../redux/profile/profileSlice';
-import { clearReplyComments, createComment, fetchMoreComments, fetchPost, fetchPostDetail, fetchRepliesComment, toggleCommentLike, toggleLike } from '../../redux/post/selectedPostSlice';
+import { clearReplyComments, createComment, deletePost, fetchMoreComments, fetchPost, fetchPostDetail, fetchRepliesComment, toggleCommentLike, toggleLike } from '../../redux/post/selectedPostSlice';
 import { useNavigate, useParams } from 'react-router-dom';
 import { set } from 'lodash';
 import CommentRefractor from '../refractor/CommentRefractor';
@@ -26,16 +26,7 @@ const PrevArrow = ({ onClick }) => (
     </div>
 );
 
-//get user from localStorage
-const userFromStorage = localStorage.getItem('user')
-    ? JSON.parse(localStorage.getItem('user'))
-    : null;
-
-//get user by id in localStorage
-const currentUserId = userFromStorage ? userFromStorage._id : null; // Lấy userId từ localStorage
-
-
-const PostDetail = () => {
+const PostDetail = ({ onClose }) => {
     const { postId } = useParams();
 
     const scrollContainerRef = useRef(null);
@@ -45,10 +36,12 @@ const PostDetail = () => {
     const [comments, setComments] = useState([]);
     const [isLiked, setIsLiked] = useState(false);
     const [replyToComment, setReplyToComment] = useState(null);
+    const [isOptionsModalOpen, setIsOptionsModalOpen] = useState(false);
 
     const dispatch = useDispatch();
     const navigate = useNavigate();
 
+    const authUser = useSelector((state) => state.auth.user)
     const postDetail = useSelector((state) => state.selectedPost.post)
     const postComments = useSelector((state) => state.selectedPost.comments)
     const likeStatus = useSelector((state) => state.selectedPost.post.isLiked)
@@ -56,7 +49,37 @@ const PostDetail = () => {
     const commentLoading = useSelector((state) => state.selectedPost.isLoadingMoreComments)
     const fetchMore = useSelector((state) => state.selectedPost.fetchMore) // check if there're more comments to load
 
-    const userData = useSelector((state) => state.profile.user); // current user's data
+    // const userData = useSelector((state) => state.profile.user); // current user's data
+
+    const handleOptionsClick = () => setIsOptionsModalOpen(true);
+    const handleOptionsClose = () => setIsOptionsModalOpen(false);
+
+    const handleDeletePost = () => {
+        Modal.confirm({
+            title: 'Xác nhận xoá bài viết',
+            content: 'Bạn có chắc chắn muốn xoá bài viết này không?',
+            okText: 'Xoá',
+            okType: 'danger',
+            cancelText: 'Huỷ',
+            onOk() {
+                // TODO: Thêm logic xoá bài viết ở đây
+                dispatch(deletePost())
+                setIsOptionsModalOpen(false);
+                onClose();
+            },
+        });
+    };
+
+    const handleReportPost = () => {
+        // TODO: Thêm logic báo cáo bài viết ở đây
+
+        setIsOptionsModalOpen(false);
+    };
+
+    const handleViewPost = () => {
+        // TODO: Thêm logic xem bài viết (có thể chuyển hướng)
+        setIsOptionsModalOpen(false);
+    };
 
     const handleScroll = () => {
         const container = scrollContainerRef.current;
@@ -92,7 +115,6 @@ const PostDetail = () => {
     const handleCommentChange = (e) => setComment(e.target.value);
 
     const handleCommentPost = async () => {
-        console.log('Posting comment:', replyToComment);
         await dispatch(createComment(
             {
                 post: postDetail._id,
@@ -184,34 +206,62 @@ const PostDetail = () => {
             {/* Right (desktop) or Bottom (mobile) */}
             <div className="w-full lg:w-2/5 flex flex-col p-4 text-sm max-h-[50vh] lg:max-h-full overflow-y-auto">
                 {/* User Info */}
-                <div className="flex items-center space-x-2 mb-3 border-b pb-2">
+                <div className="flex items-center justify-between space-x-2 mb-3 border-b pb-2">
                     <div>
-                        <Avatar size={30} className="absolute top-0 left-0 z-10 m-4" src={userData?.profile?.avatar || 'https://res.cloudinary.com/dwaldcj4v/image/upload/v1745215451/sodmg5jwxc8m2pho0i8r.jpg'}>
+                        <Avatar size={30} className="absolute top-0 left-0 z-10 m-4" src={postDetail?.author?.profile?.avatar || 'https://res.cloudinary.com/dwaldcj4v/image/upload/v1745215451/sodmg5jwxc8m2pho0i8r.jpg'}>
                             <img src="https://i.pravatar.cc/150?u=user" alt="user" className="w-full object-cover max-h-[600px]" />
                         </Avatar>
-                        <span className="ml-2 font-semibold">{'@' + userData?.username}</span>
+                        <span className="ml-2 font-semibold">{'@' + postDetail?.author?.username}</span>
                         {/* <span className='ml-2'>{`- ${userData?.fullName}`}</span> */}
                         <span className="ml-1">{postDetail.caption}</span>
                     </div>
+                    <EllipsisOutlined
+                        onClick={handleOptionsClick}
+                        className="ml-2 hover:text-blue-500 hover:cursor-pointer text-lg" />
                 </div>
+                <Modal
+                    open={isOptionsModalOpen}
+                    onCancel={handleOptionsClose}
+                    footer={null}
+                    closable={false} // Ẩn nút đóng mặc định
+                    centered
+                >
+                    <div className="flex flex-col space-y-3">
+                        {
+                            // block quyền xoá bài viết nếu không phải người đăng nhập trên front-end (đã chặn trong back-end)
+                            authUser._id === postDetail.author._id && // comment để test cho back-end
+                            <button
+                                className="text-red-500 shadow-sm font-semibold py-2 hover:bg-gray-100 rounded"
+                                onClick={handleDeletePost}
+                            >
+                                Xoá bài viết
+                            </button>
+                        }
+                        <button
+                            className="text-gray-500 shadow-sm font-semibold py-2 hover:bg-gray-100 rounded"
+                            onClick={handleReportPost}
+                        >
+                            Báo cáo
+                        </button>
+                        <button
+                            className="text-gray-500 shadow-sm font-semibold py-2 hover:bg-gray-100 rounded"
+                            onClick={handleViewPost}
+                        >
+                            Xem bài viết
+                        </button>
+                        <button
+                            className="py-2 shadow-sm hover:bg-gray-100 rounded"
+                            onClick={handleOptionsClose}
+                        >
+                            Đóng
+                        </button>
+                    </div>
+                </Modal>
 
                 <div
                     ref={scrollContainerRef}
                     onScroll={handleScroll}
                     className="space-y-2 mb-4 h-100 sm:max-h-80 md:max-h-96 overflow-y-auto">
-                    {/* <Avatar
-                        size={30}
-                        className="absolute top-0 left-0 z-10 m-4"
-                        src={userData?.profile?.avatar || 'https://res.cloudinary.com/dwaldcj4v/image/upload/v1745215451/sodmg5jwxc8m2pho0i8r.jpg'}
-                    >
-                        <img
-                            src="https://i.pravatar.cc/150?u=user"
-                            alt="user"
-                            className="w-full object-cover max-h-[600px]"
-                        />
-                    </Avatar>
-                    <span className="ml-2 font-semibold">{'@' + userData?.username}</span>
-                    <span className="ml-1">{postDetail.caption}</span> */}
 
                     {
                         status === 'loading' && comments.length === 0 ? <Skeleton active className='mt-2 ml-2' /> :
@@ -222,6 +272,7 @@ const PostDetail = () => {
                                         replyToComment={replyToComment}
                                         handleCommentReply={handleCommentReply}
                                         handleCancelReply={handleCancelReply}
+                                        onClose={onClose}
                                     />
                                     {
                                         c.replies && c.replies.length > 0 &&
@@ -232,6 +283,7 @@ const PostDetail = () => {
                                                     replyToComment={replyToComment}
                                                     handleCommentReply={handleCommentReply}
                                                     handleCancelReply={handleCancelReply}
+                                                    onClose={onClose}
                                                 />
                                             </div>
                                         ))

@@ -47,7 +47,9 @@ export default function PostThumb({ post }) {
 
 
             <Modal open={isModalOpen} onCancel={() => setIsModalOpen(false)} footer={null} width="90vw" style={{ maxWidth: 1200 }} centered>
-                <PostDetail/>
+                <PostDetail
+                    onClose={() => setIsModalOpen(false)}
+                />
             </Modal>
 
         </>
