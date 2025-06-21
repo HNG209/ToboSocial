@@ -5,6 +5,8 @@ import authReducer from './auth/authSlice';
 import profileReducer from './profile/profileSlice'; // Import reducer cho thông tin người dùng
 import commentsReducer from './comments/commentsSlice';
 import selectedPostReducer from './post/selectedPostSlice';
+import notificationReducer from './notification/notificationSlice';
+
 
 export const store = configureStore({
     reducer: {
@@ -12,6 +14,7 @@ export const store = configureStore({
         auth: authReducer,
         profile: profileReducer, // Reducer cho thông tin người dùng
         comments: commentsReducer,
-        selectedPost: selectedPostReducer
+        selectedPost: selectedPostReducer, // TODO: đổi tên cái này
+        notification: notificationReducer
     },
 });

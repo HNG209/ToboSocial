@@ -48,9 +48,9 @@ const fetchRepliesByCommentAPI = ({ commentId, userId }, page = 1, limit = 2) =>
     return axios.post(URL_BACKEND, { userId });
 }
 
-const updateCommentAPI = (commentId, text) => {
-    const URL_BACKEND = `/v1/api/comments/${commentId}`;
-    return axios.patch(URL_BACKEND, { text });
+const updateCommentAPI = (comment) => {
+    const URL_BACKEND = `/v1/api/comments`;
+    return axios.patch(URL_BACKEND, { comment });
 }
 
 const likeCommentAPI = (commentId, userId) => {
@@ -64,8 +64,8 @@ const unlikeCommentAPI = (commentId, userId) => {
 }
 
 const deleteCommentAPI = (commentId) => {
-    const URL_BACKEND = `/v1/api/comments`;
-    return axios.delete(URL_BACKEND, { data: { id: commentId } });
+    const URL_BACKEND = `/v1/api/comments/${commentId}`;
+    return axios.delete(URL_BACKEND);
 }
 
 const deletePostAPI = (postId) => {

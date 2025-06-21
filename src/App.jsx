@@ -5,11 +5,13 @@ import Sidebar from './components/layout/sidebar'
 import Home from './pages/Home'
 import ProfileProvider from './components/context/ProfileContext'
 import UploadedImageProvider from './components/context/UploadedImageContext'
+import NotificationWatcher from './components/utils/NotificationWatcher'
 
 function App() {
 
   return (
     <>
+      <NotificationWatcher />
       <UploadedImageProvider>
         <ProfileProvider>
           <div className="flex flex-col md:flex-row h-screen">

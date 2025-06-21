@@ -1,5 +1,6 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import { createCommentAPI, fetchPostAuthorAPI, fetchLikersAPIv2, fetchPostCommentsAPIv2, fetchPostDetailAPI, likeStatusAPIv2, likeAPIv2, unlikeAPIv2, fetchRepliesByCommentAPI, deletePostAPI } from "../../services/api.service";
+import { deleteComment, updateComment } from "../comments/commentsSlice";
 
 const getLocalStorageId = () => {
     //get user from localStorage
@@ -172,6 +173,7 @@ const selectedPostSlice = createSlice({
             .addCase(fetchPost.fulfilled, (state, action) => {
                 state.post = action.payload;
             })
+
             // ===== Fetch Posts by User =====
             .addCase(fetchPostDetail.pending, (state) => {
                 state.comments = [];
@@ -191,11 +193,11 @@ const selectedPostSlice = createSlice({
                 state.status = 'failed'; // Đặt trạng thái thành failed
                 state.error = action.payload; // Lưu lỗi nếu có
             })
-
             .addCase(fetchMoreComments.pending, (state) => {
                 state.isLoadingMoreComments = true;
                 state.status = 'loading'; // Đặt trạng thái thành loading
             })
+
             // fetch more comments(page > 1)
             .addCase(fetchMoreComments.fulfilled, (state, action) => {
                 const { commentsResponse, nextPage } = action.payload;
@@ -221,7 +223,7 @@ const selectedPostSlice = createSlice({
                 state.error = action.payload; // Lưu lỗi nếu có
             })
 
-            //Create comment
+            // Create comment
             .addCase(createComment.fulfilled, (state, action) => {
                 // nếu trường rootComment tồn tại thì đây là bình luận trả lời, cập nhật lại bình luận gốc
                 if (action.payload.rootComment) {
@@ -245,11 +247,11 @@ const selectedPostSlice = createSlice({
             .addCase(createComment.rejected, (state, action) => {
                 state.error = action.payload;
             })
-
             .addCase(fetchRepliesComment.pending, (state) => {
                 state.status = 'loading'; // Đặt trạng thái thành loading
             })
-            //fetch replies comment
+
+            // Fetch replies comment
             .addCase(fetchRepliesComment.fulfilled, (state, action) => {
                 const { commentId, replies, replyPage } = action.payload;
                 const commentIndex = state.comments.findIndex(c => c._id === commentId);
@@ -267,6 +269,7 @@ const selectedPostSlice = createSlice({
                 const uniqueReplies = Array.from(new Set(state.comments[commentIndex].replies.map(r => r._id)))
                     .map(id => state.comments[commentIndex].replies.find(r => r._id === id));
                 state.comments[commentIndex].replies = uniqueReplies; // cập nhật lại bình luận trả lời với các bình luận không trùng lặp
+
                 // state.comments[commentIndex].countReply = (state.comments[commentIndex].countReply || 0) + replies.length; // cập nhật số lượng bình luận trả lời
 
                 //thêm trường replyPage để quản lý phân trang của bình luận trả lời
@@ -275,7 +278,7 @@ const selectedPostSlice = createSlice({
                 state.status = 'succeeded'; // Đặt trạng thái thành succeeded
             })
 
-            //toggle post like
+            // Toggle post like
             .addCase(toggleLike.fulfilled, (state, action) => {
                 state.post.isLiked = action.payload.result.isLiked;
                 if (state.post) {
@@ -283,7 +286,7 @@ const selectedPostSlice = createSlice({
                 }
             })
 
-            //toggle comment like
+            // Toggle comment like (sẽ di chuyển qua comment slice)
             .addCase(toggleCommentLike.fulfilled, (state, action) => {
                 const { result, root } = action.payload;
 
@@ -310,7 +313,20 @@ const selectedPostSlice = createSlice({
                 }
             })
 
-            .addCase(deletePost.fulfilled, (state, action) => {
+            // Delete comment (lắng nghe bên comment slice)
+            .addCase(deleteComment.fulfilled, (state, action) => {
+                const commentId = action.payload.commentId;
+                state.comments = state.comments.filter(c => c._id !== commentId)
+            })
+
+            // Update comment (lắng nghe bên comment slice)
+            .addCase(updateComment.fulfilled, (state, action) => {
+                const newComment = action.payload.comment;
+
+                const index = state.comments.findIndex(c => c._id === newComment.id)
+                if (index === -1) return;
+
+                state.comments[index].text = newComment.text;
             })
     }
 })

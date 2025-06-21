@@ -13,6 +13,8 @@ import { clearReplyComments, createComment, deletePost, fetchMoreComments, fetch
 import { useNavigate, useParams } from 'react-router-dom';
 import { set } from 'lodash';
 import CommentRefractor from '../refractor/CommentRefractor';
+import { showNotification } from '../../redux/notification/notificationSlice';
+import useGlobalNotification from '../../hooks/useGlobalNotification';
 
 const NextArrow = ({ onClick }) => (
     <div className="absolute right-3 top-1/2 transform -translate-y-1/2 z-10 cursor-pointer text-white bg-black/50 p-1 rounded-full" onClick={onClick}>
@@ -30,7 +32,7 @@ const PostDetail = ({ onClose }) => {
     const { postId } = useParams();
 
     const scrollContainerRef = useRef(null);
-
+    const notify = useGlobalNotification();
     const [muted, setMuted] = useState(true);
     const [comment, setComment] = useState('');
     const [comments, setComments] = useState([]);
@@ -62,10 +64,10 @@ const PostDetail = ({ onClose }) => {
             okType: 'danger',
             cancelText: 'Huỷ',
             onOk() {
-                // TODO: Thêm logic xoá bài viết ở đây
                 dispatch(deletePost())
                 setIsOptionsModalOpen(false);
                 onClose();
+                notify.success('Xoá thành công!', 'Bài viết đã xoá thành công')
             },
         });
     };
@@ -229,7 +231,7 @@ const PostDetail = ({ onClose }) => {
                     <div className="flex flex-col space-y-3">
                         {
                             // block quyền xoá bài viết nếu không phải người đăng nhập trên front-end (đã chặn trong back-end)
-                            authUser._id === postDetail.author._id && // comment để test cho back-end
+                            authUser._id === postDetail.author?._id && // comment để test cho back-end
                             <button
                                 className="text-red-500 shadow-sm font-semibold py-2 hover:bg-gray-100 rounded"
                                 onClick={handleDeletePost}

@@ -1,9 +1,13 @@
 import { EllipsisOutlined, HeartFilled, HeartOutlined } from "@ant-design/icons"
-import { Avatar } from "antd"
+import { Avatar, Modal, Popover } from "antd"
 import { fetchRepliesComment, toggleCommentLike } from "../../redux/post/selectedPostSlice";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import React, { use, useEffect, useState } from "react";
+import { deleteComment, updateComment } from "../../redux/comments/commentsSlice";
+import CommentEditor from "./CommentEditor";
+import { showNotification } from "../../redux/notification/notificationSlice";
+import useGlobalNotification from "../../hooks/useGlobalNotification";
 
 const formatCommentTime = (createdAt) => {
     const now = new Date();
@@ -34,10 +38,14 @@ const formatCommentTime = (createdAt) => {
 
 function CommentRefractor({ comment, handleCommentReply, handleCancelReply, replyToComment, onClose }) {
     const [option, setOption] = useState(false);
-    // console.log('CommentRefractor render', comment);
+    const [isModify, setIsModify] = useState(false);
+    const [popoverOpen, setPopoverOpen] = useState(false); // State cho Popover
+    const notify = useGlobalNotification();
+
     const dispatch = useDispatch();
     const navigate = useNavigate();
 
+    const postUserId = useSelector(state => state.selectedPost.author._id)
     const authUserId = useSelector(state => state.auth.user._id)
 
     const toggleCmtLike = (commentId) => {
@@ -48,11 +56,66 @@ function CommentRefractor({ comment, handleCommentReply, handleCancelReply, repl
         dispatch(fetchRepliesComment(commentId));
     }
 
+    const handleMenuClick = (action) => {
+        setPopoverOpen(false);
+        if (action === 'delete') {
+            Modal.confirm({
+                title: 'Xác nhận xoá',
+                content: 'Bạn có chắc chắn muốn xoá bình luận này không?',
+                okText: 'Xoá',
+                okType: 'danger',
+                cancelText: 'Huỷ',
+                onOk() {
+                    dispatch(deleteComment(comment._id))
+                    notify.success('Xoá thành công!', 'Bình luận đã được xoá')
+                },
+            });
+            // TODO: Xử lý xoá comment
+        } else if (action === 'modify') {
+            setIsModify(true);
+            // TODO: Xử lý sửa comment
+        } else if (action === 'report') {
+            // TODO: Xử lý báo cáo comment
+        }
+    };
+
+    const popoverContent = (
+        <div className="flex flex-col max-w-[150px] justify-center items-center">
+            {
+                // Chỉ có chủ bài viết hoặc chủ comment mới có quyền xoá, đã xử lý back-end
+                (postUserId === authUserId ||
+                    comment.user._id === authUserId) &&
+                <button
+                    className="text-red-500 font-semibold py-2 px-4 hover:bg-gray-100 rounded"
+                    onClick={() => handleMenuClick('delete')}
+                >
+                    Delete
+                </button>
+            }
+            {
+                // Chỉ có chủ comment mới được chỉnh sửa
+                comment.user._id === authUserId &&
+                <button
+                    className="text-gray-500 font-semibold py-2 px-4 hover:bg-gray-100 rounded"
+                    onClick={() => handleMenuClick('modify')}
+                >
+                    Modify
+                </button>
+            }
+            <button
+                className="text-gray-500 font-semibold py-2 px-4 hover:bg-gray-100 rounded"
+                onClick={() => handleMenuClick('report')}
+            >
+                Report
+            </button>
+        </div>
+    );
+
     const viewProfile = (userId) => {
         if (typeof onClose === 'function') {
             onClose();
         }
-        if (userId === authUserId){
+        if (userId === authUserId) {
             navigate('/profile')
             return;
         }
@@ -67,6 +130,7 @@ function CommentRefractor({ comment, handleCommentReply, handleCancelReply, repl
             }}
             onMouseLeave={() => {
                 setOption(false);
+                setPopoverOpen(false);
             }}
             className="hover:bg-gray-100 rounded-lg relative p-2 shadow-sm mb-2 transition-all duration-200 ease-in-out">
             <div className="flex items-center justify-between">
@@ -132,18 +196,51 @@ function CommentRefractor({ comment, handleCommentReply, handleCancelReply, repl
                 }
                 {
                     option &&
-                    <EllipsisOutlined className="ml-2 hover:text-blue-500 hover:cursor-pointer" />
-                }
+                    <Popover
+                        content={popoverContent}
+                        trigger="click"
+                        open={popoverOpen}
+                        onOpenChange={setPopoverOpen}
+                        placement="bottom"
+                        overlayClassName="!p-0"
+                    >
+                        <EllipsisOutlined
+                            className="ml-2 hover:text-blue-500 hover:cursor-pointer"
+                            onClick={() => setPopoverOpen(!popoverOpen)}
+                        />
+                    </Popover>}
             </span>
+            <Modal
+                open={isModify}
+                onCancel={() => { setIsModify(false) }} // Đổi từ onClose sang onCancel
+                centered
+                footer={null} // Ẩn nút OK/Cancel mặc định
+            >
+                <CommentEditor
+                    user={comment.user}
+                    comment={comment}
+                    onCancel={() => setIsModify(false)} // Đóng modal khi bấm Huỷ trong CommentEditor
+                    onSave={(text) => {
+                        // TODO: Xử lý lưu comment ở đây
+                        dispatch(updateComment(
+                            {
+                                id: comment._id,
+                                text
+                            }))
+                        setIsModify(false);
+                    }}
+                />
+            </Modal>
         </div>
     )
 }
 
 export default React.memo(CommentRefractor, (prevProps, nextProps) => {
     // Chỉ render lại nếu comment khác nhau
-    return prevProps.comment._id === nextProps.comment._id &&
-        prevProps.comment?.likeCount === nextProps.comment?.likeCount &&
-        prevProps.comment.countReply === nextProps.comment.countReply &&
-        prevProps.comment.isLiked === nextProps.comment.isLiked &&
+    return prevProps.comment._id === nextProps.comment._id && // khác id
+        prevProps.comment?.text === nextProps.comment?.text && // khác nội dung của bình luận(text)
+        prevProps.comment?.likeCount === nextProps.comment?.likeCount && // khác số lượt like
+        prevProps.comment.countReply === nextProps.comment.countReply && // khác số lượt reply
+        prevProps.comment.isLiked === nextProps.comment.isLiked && // khác trạng thái like
         prevProps.replyToComment?.commentId === nextProps.replyToComment?.commentId;
 });
