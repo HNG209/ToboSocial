@@ -78,6 +78,11 @@ const PostDetail = ({ onClose }) => {
         setIsOptionsModalOpen(false);
     };
 
+    const handlePostUpdate = () => {
+        navigate(`/update/post/${postDetail._id}`)
+        setIsOptionsModalOpen(false);
+    }
+
     const handleViewPost = () => {
         // TODO: Thêm logic xem bài viết (có thể chuyển hướng)
         setIsOptionsModalOpen(false);
@@ -237,6 +242,15 @@ const PostDetail = ({ onClose }) => {
                                 onClick={handleDeletePost}
                             >
                                 Xoá bài viết
+                            </button>
+                        }
+                        {
+                            authUser._id === postDetail.author?._id && // chỉ cho phép chủ bài viết chỉnh sửa
+                            <button
+                                className="text-gray-500 shadow-sm font-semibold py-2 hover:bg-gray-100 rounded"
+                                onClick={handlePostUpdate}
+                            >
+                                Chỉnh sửa bài viết
                             </button>
                         }
                         <button

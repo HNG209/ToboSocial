@@ -34,8 +34,7 @@ import AdminRoute from "./pages/client/auth/AdminRoute";
 import PrivateRoute from "./pages/client/auth/PrivateRoute";
 import CreatePost from "./pages/client/CreatePost";
 import PostDetail from "./components/layout/PostDetail";
-
-
+import PostUpdatePage from "./pages/PostUpdatePage";
 
 
 const router = createBrowserRouter([
@@ -98,7 +97,19 @@ const router = createBrowserRouter([
       },
       {
         path: "/posts/:postId",
-        element: <PostDetail />,
+        element: (
+          <PrivateRoute>
+            <PostDetail />,
+          </PrivateRoute>
+        )
+      },
+      {
+        path: "/update/post/:id",
+        element: (
+          <PrivateRoute>
+            <PostUpdatePage />
+          </PrivateRoute>
+        )
       },
       {
         path: "/search",
