@@ -74,7 +74,6 @@ const commentsSlice = createSlice({
             })
             .addCase(createComment.fulfilled, (state, action) => {
                 state.status = 'succeeded';
-                console.log('create comment:', action.payload);
                 state.newComments = action.payload;
             })
             .addCase(createComment.rejected, (state, action) => {

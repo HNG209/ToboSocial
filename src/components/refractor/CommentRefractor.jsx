@@ -1,4 +1,4 @@
-import { EllipsisOutlined, HeartFilled, HeartOutlined } from "@ant-design/icons"
+import { EllipsisOutlined, HeartFilled, HeartOutlined, RollbackOutlined, TeamOutlined } from "@ant-design/icons"
 import { Avatar, Modal, Popover } from "antd"
 import { fetchRepliesComment, toggleCommentLike } from "../../redux/post/selectedPostSlice";
 import { useDispatch, useSelector } from "react-redux";
@@ -36,7 +36,7 @@ const formatCommentTime = (createdAt) => {
     });
 };
 
-function CommentRefractor({ comment, handleCommentReply, handleCancelReply, replyToComment, onClose }) {
+function CommentRefractor({ comment, handleCommentReply, handleCancelReply, replyToComment, onClose, setReplied }) {
     const [option, setOption] = useState(false);
     const [isModify, setIsModify] = useState(false);
     const [popoverOpen, setPopoverOpen] = useState(false); // State cho Popover
@@ -54,6 +54,12 @@ function CommentRefractor({ comment, handleCommentReply, handleCancelReply, repl
 
     const handleReplyView = (commentId) => {
         dispatch(fetchRepliesComment(commentId));
+    }
+
+    const handleGoToRepliedComment = () => { // trỏ tới comment được trả lời của comment hiện tại
+        if(!setReplied) return;
+
+        setReplied(comment.replyTo);
     }
 
     const handleMenuClick = (action) => {
@@ -195,6 +201,13 @@ function CommentRefractor({ comment, handleCommentReply, handleCancelReply, repl
                         </span>
                 }
                 {
+                    !comment.rootComment ||
+                    <RollbackOutlined
+                        className="ml-2 hover:cursor-pointer"
+                        onClick={handleGoToRepliedComment}
+                    />
+                }
+                {
                     option &&
                     <Popover
                         content={popoverContent}
@@ -208,7 +221,8 @@ function CommentRefractor({ comment, handleCommentReply, handleCancelReply, repl
                             className="ml-2 hover:text-blue-500 hover:cursor-pointer"
                             onClick={() => setPopoverOpen(!popoverOpen)}
                         />
-                    </Popover>}
+                    </Popover>
+                }
             </span>
             <Modal
                 open={isModify}

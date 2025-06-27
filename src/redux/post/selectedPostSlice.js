@@ -167,6 +167,7 @@ const selectedPostSlice = createSlice({
                 state.comments[commentIndex].replyPage = 1; // reset lại trang bình luận trả lời
             }
         }
+        
     },
     extraReducers: (builder) => {
         builder

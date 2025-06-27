@@ -12,6 +12,7 @@ import { getCurrentUser } from '../../redux/profile/profileSlice';
 import { clearReplyComments, createComment, deletePost, fetchMoreComments, fetchPost, fetchPostDetail, fetchRepliesComment, toggleCommentLike, toggleLike } from '../../redux/post/selectedPostSlice';
 import { useNavigate, useParams } from 'react-router-dom';
 import { set } from 'lodash';
+import { animate, motion } from "framer-motion";
 import CommentRefractor from '../refractor/CommentRefractor';
 import { showNotification } from '../../redux/notification/notificationSlice';
 import useGlobalNotification from '../../hooks/useGlobalNotification';
@@ -34,6 +35,8 @@ const PostDetail = ({ onClose }) => {
     const scrollContainerRef = useRef(null);
     const notify = useGlobalNotification();
     const [muted, setMuted] = useState(true);
+    const [zoom, setZoom] = useState(false);
+    const [repliedComment, setRepliedComment] = useState(null); // dùng để animate, nhận id
     const [comment, setComment] = useState('');
     const [comments, setComments] = useState([]);
     const [isLiked, setIsLiked] = useState(false);
@@ -52,6 +55,10 @@ const PostDetail = ({ onClose }) => {
     const fetchMore = useSelector((state) => state.selectedPost.fetchMore) // check if there're more comments to load
 
     // const userData = useSelector((state) => state.profile.user); // current user's data
+
+    useEffect(() => {
+        console.log('day ne', repliedComment);
+    }, [repliedComment])
 
     const handleOptionsClick = () => setIsOptionsModalOpen(true);
     const handleOptionsClose = () => setIsOptionsModalOpen(false);
@@ -102,6 +109,15 @@ const PostDetail = ({ onClose }) => {
             }
         }
     };
+
+    useEffect(() => { // test motion
+        setZoom(true);
+        const timeout = setTimeout(() => {
+            setZoom(false); // quay lại trạng thái ban đầu
+        }, 800); // chạy trong 800ms
+
+        return () => clearTimeout(timeout);
+    }, []);
 
     useEffect(() => {
         if (postId != null && postId != undefined) {
@@ -283,24 +299,49 @@ const PostDetail = ({ onClose }) => {
                         status === 'loading' && comments.length === 0 ? <Skeleton active className='mt-2 ml-2' /> :
                             comments.map((c) => (
                                 <div className="flex flex-col" key={c._id}>
-                                    <CommentRefractor
-                                        comment={c}
-                                        replyToComment={replyToComment}
-                                        handleCommentReply={handleCommentReply}
-                                        handleCancelReply={handleCancelReply}
-                                        onClose={onClose}
-                                    />
+                                    <motion.div
+                                        key={repliedComment === c._id ? `${c._id}-zoom` : c._id} // ép remount
+                                        animate={repliedComment === c._id ? { scale: [1, 1.05, 1] } : false}
+                                        transition={{
+                                            duration: 0.6,
+                                            ease: "easeInOut",
+                                        }}
+                                        onAnimationComplete={() => {
+                                            setRepliedComment(null);
+                                        }}
+                                    >
+                                        <CommentRefractor
+                                            comment={c}
+                                            replyToComment={replyToComment}
+                                            handleCommentReply={handleCommentReply}
+                                            handleCancelReply={handleCancelReply}
+                                            onClose={onClose}
+                                        />
+                                    </motion.div>
                                     {
                                         c.replies && c.replies.length > 0 &&
                                         c.replies.map((reply) => (
                                             <div className="ml-5" key={reply._id}>
-                                                <CommentRefractor
-                                                    comment={reply}
-                                                    replyToComment={replyToComment}
-                                                    handleCommentReply={handleCommentReply}
-                                                    handleCancelReply={handleCancelReply}
-                                                    onClose={onClose}
-                                                />
+                                                <motion.div
+                                                    key={repliedComment === reply._id ? `${reply._id}-zoom` : reply._id} // ép remount
+                                                    animate={repliedComment === reply._id ? { scale: [1, 1.05, 1] } : false}
+                                                    transition={{
+                                                        duration: 0.6,
+                                                        ease: "easeInOut",
+                                                    }}
+                                                    onAnimationComplete={() => {
+                                                        setRepliedComment(null);
+                                                    }}
+                                                >
+                                                    <CommentRefractor
+                                                        comment={reply}
+                                                        replyToComment={replyToComment}
+                                                        handleCommentReply={handleCommentReply}
+                                                        handleCancelReply={handleCancelReply}
+                                                        onClose={onClose}
+                                                        setReplied={setRepliedComment}
+                                                    />
+                                                </motion.div>
                                             </div>
                                         ))
                                     }

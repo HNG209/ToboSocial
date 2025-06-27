@@ -169,11 +169,11 @@ const router = createBrowserRouter([
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <ConfigProvider getPopupContainer={() => document.body}>
-    <AntdApp>
+    {/* <AntdApp> */}
       <Provider store={store}>
         <RouterProvider router={router} />
       </Provider>
-    </AntdApp>
+    {/* </AntdApp> */}
   </ConfigProvider>
 );
 

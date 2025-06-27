@@ -66,50 +66,54 @@ const Sidebar = () => {
     ];
 
     return (
-        <aside className="hidden md:flex flex-col w-16 lg:w-64 bg-white border-r shadow-sm p-4">
-            <PostModal isOpen={isOpen} onClose={() => setIsOpen(false)}></PostModal>
-            <div className="w-[200px] h-[80px] overflow-hidden">
-                <NavLink to="/">
-                    <img
-                        src={tobologo}
-                        alt="Tobo Logo"
-                        className="w-[200px] h-[80px] object-cover -m-[10px] ml-[-15px]"
-                    />
+        <aside className="hidden md:flex flex-col w-20 lg:w-64 bg-white border-r shadow p-4">
+            <PostModal isOpen={isOpen} onClose={() => setIsOpen(false)} />
+
+            {/* Logo phóng to và có padding đều */}
+            <div className="flex justify-center mb-6 pt-2">
+                <NavLink to="/" className="block w-full">
+                    <div className="flex justify-center items-center">
+                        <img
+                            src={tobologo}
+                            className="w-50 h-10 object-cover object-center"
+                        />
+                    </div>
                 </NavLink>
             </div>
 
-            <nav className="flex flex-col gap-6 items-center lg:items-start">
-                {menuItems.map((item, idx) => (
+
+
+            {/* Menu items dời lên gần logo */}
+            <nav className="flex flex-col gap-4 items-center lg:items-start">
+                {menuItems.map((item, idx) =>
                     item.dropdown ? (
                         <Dropdown key={idx} overlay={item.dropdown} trigger={["click"]}>
-                            <div
-                                className="flex items-center gap-2 hover:text-black transition-colors text-gray-700 cursor-pointer"
-                            >
-                                {item.icon}
-                                <span className="hidden lg:inline">{item.label}</span>
+                            <div className="flex items-center gap-4 px-4 py-2 rounded-xl w-full cursor-pointer text-blue-600 hover:text-black hover:bg-gray-50 transition-all duration-200">
+                                <span className="text-xl">{item.icon}</span>
+                                <span className="hidden lg:inline text-sm">{item.label}</span>
                             </div>
                         </Dropdown>
                     ) : (
-                        <div
+                        <NavLink
                             key={idx}
-                            onClick={() => {
-                                if (item.to) {
-                                    navigate(item.to);
-                                }
-                                item.label === "Create" && setIsOpen(true)
-                            }}
+                            to={item.to}
                             className={({ isActive }) =>
-                                `flex items-center gap-2 hover:text-black transition-colors ${isActive ? "text-black font-semibold" : "text-gray-700"
-                                }`
+                                `group flex items-center gap-4 px-4 py-2 rounded-xl cursor-pointer
+                        ${isActive
+                                    ? "bg-blue-100 w-full text-blue-500 font-semibold"
+                                    : "text-blue-600 w-full hover:text-black hover:bg-gray-50"} 
+                        transition-all duration-200`
                             }
                         >
-                            {item.icon}
-                            <span className="hidden lg:inline">{item.label}</span>
-                        </div>
+                            <span className="text-xl">{item.icon}</span>
+                            <span className="hidden lg:inline text-sm">{item.label}</span>
+                        </NavLink>
                     )
-                ))}
+                )}
             </nav>
         </aside>
+
+
     );
 };
 
