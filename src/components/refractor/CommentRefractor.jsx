@@ -3,7 +3,7 @@ import { Avatar, Modal, Popover } from "antd"
 import { fetchRepliesComment, toggleCommentLike } from "../../redux/post/selectedPostSlice";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
-import React, { use, useEffect, useState } from "react";
+import React, { forwardRef, use, useEffect, useState } from "react";
 import { deleteComment, updateComment } from "../../redux/comments/commentsSlice";
 import CommentEditor from "./CommentEditor";
 import { showNotification } from "../../redux/notification/notificationSlice";
@@ -36,7 +36,10 @@ const formatCommentTime = (createdAt) => {
     });
 };
 
-function CommentRefractor({ comment, handleCommentReply, handleCancelReply, replyToComment, onClose, setReplied }) {
+const CommentRefractor = forwardRef(function CommentRefractor(
+    { comment, handleCommentReply, handleCancelReply, replyToComment, onClose, setReplied },
+    ref // 👈 nhận ref từ component cha
+) {
     const [option, setOption] = useState(false);
     const [isModify, setIsModify] = useState(false);
     const [popoverOpen, setPopoverOpen] = useState(false); // State cho Popover
@@ -57,7 +60,7 @@ function CommentRefractor({ comment, handleCommentReply, handleCancelReply, repl
     }
 
     const handleGoToRepliedComment = () => { // trỏ tới comment được trả lời của comment hiện tại
-        if(!setReplied) return;
+        if (!setReplied) return;
 
         setReplied(comment.replyTo);
     }
@@ -131,6 +134,7 @@ function CommentRefractor({ comment, handleCommentReply, handleCancelReply, repl
 
     return (
         <div
+            ref={ref}
             onMouseEnter={() => {
                 setOption(true);
             }}
@@ -247,7 +251,7 @@ function CommentRefractor({ comment, handleCommentReply, handleCancelReply, repl
             </Modal>
         </div>
     )
-}
+});
 
 export default React.memo(CommentRefractor, (prevProps, nextProps) => {
     // Chỉ render lại nếu comment khác nhau

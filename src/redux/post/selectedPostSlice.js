@@ -167,7 +167,7 @@ const selectedPostSlice = createSlice({
                 state.comments[commentIndex].replyPage = 1; // reset lại trang bình luận trả lời
             }
         }
-        
+
     },
     extraReducers: (builder) => {
         builder
@@ -234,13 +234,13 @@ const selectedPostSlice = createSlice({
                     if (!state.comments[rootCommentIndex].replies) {
                         state.comments[rootCommentIndex].replies = [action.payload];
                     } else {
-                        state.comments[rootCommentIndex].replies = [action.payload, ...state.comments[rootCommentIndex].replies];
+                        state.comments[rootCommentIndex].replies = [...state.comments[rootCommentIndex].replies, action.payload];
                     }
                     state.comments[rootCommentIndex].countReply = (state.comments[rootCommentIndex].countReply || 0) + 1;
                     return; // nếu là bình luận trả lời thì không cần thêm vào danh sách bình luận gốc
                 }
 
-                state.comments = [action.payload, ...state.comments]; // nếu không có trường rootComment thì đây là bình luận gốc, thêm vào danh sách bình luận
+                state.comments = [...state.comments, action.payload]; // nếu không có trường rootComment thì đây là bình luận gốc, thêm vào danh sách bình luận
                 state.post.commentCount = (state.post.commentCount || 0) + 1; // tăng số lượng bình luận của bài viết
 
                 state.error = null; // Reset error state

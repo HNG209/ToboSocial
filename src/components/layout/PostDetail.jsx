@@ -8,13 +8,10 @@ import Slider from 'react-slick';
 import 'slick-carousel/slick/slick.css';
 import 'slick-carousel/slick/slick-theme.css';
 import { useDispatch, useSelector } from 'react-redux';
-import { getCurrentUser } from '../../redux/profile/profileSlice';
 import { clearReplyComments, createComment, deletePost, fetchMoreComments, fetchPost, fetchPostDetail, fetchRepliesComment, toggleCommentLike, toggleLike } from '../../redux/post/selectedPostSlice';
 import { useNavigate, useParams } from 'react-router-dom';
-import { set } from 'lodash';
 import { animate, motion } from "framer-motion";
 import CommentRefractor from '../refractor/CommentRefractor';
-import { showNotification } from '../../redux/notification/notificationSlice';
 import useGlobalNotification from '../../hooks/useGlobalNotification';
 
 const NextArrow = ({ onClick }) => (
@@ -37,11 +34,46 @@ const PostDetail = ({ onClose }) => {
     const [muted, setMuted] = useState(true);
     const [zoom, setZoom] = useState(false);
     const [repliedComment, setRepliedComment] = useState(null); // dùng để animate, nhận id
+    const [isCommentVisible, setIsCommentVisible] = useState(false);
     const [comment, setComment] = useState('');
     const [comments, setComments] = useState([]);
     const [isLiked, setIsLiked] = useState(false);
     const [replyToComment, setReplyToComment] = useState(null);
     const [isOptionsModalOpen, setIsOptionsModalOpen] = useState(false);
+    const commentRef = useRef(null);
+
+    useEffect(() => {
+        const observer = new IntersectionObserver(
+            ([entry]) => {
+                if (entry.isIntersecting) {
+                    setIsCommentVisible(true);
+                    observer.disconnect(); // dừng theo dõi sau khi đã thấy
+                }
+            },
+            {
+                threshold: 0.6, // 60% xuất hiện trong viewport mới tính là "hiện"
+            }
+        );
+
+        if (commentRef.current) {
+            observer.observe(commentRef.current);
+        }
+
+        return () => {
+            observer.disconnect();
+        };
+    }, [repliedComment]); // trigger lại mỗi khi bạn muốn scroll tới comment mới
+
+
+    useEffect(() => {
+        if (commentRef.current) {
+            commentRef.current.scrollIntoView({
+                behavior: 'smooth',
+                block: 'center'
+            });
+        }
+    }, [repliedComment]);
+
 
     const dispatch = useDispatch();
     const navigate = useNavigate();
@@ -55,10 +87,6 @@ const PostDetail = ({ onClose }) => {
     const fetchMore = useSelector((state) => state.selectedPost.fetchMore) // check if there're more comments to load
 
     // const userData = useSelector((state) => state.profile.user); // current user's data
-
-    useEffect(() => {
-        console.log('day ne', repliedComment);
-    }, [repliedComment])
 
     const handleOptionsClick = () => setIsOptionsModalOpen(true);
     const handleOptionsClose = () => setIsOptionsModalOpen(false);
@@ -301,7 +329,7 @@ const PostDetail = ({ onClose }) => {
                                 <div className="flex flex-col" key={c._id}>
                                     <motion.div
                                         key={repliedComment === c._id ? `${c._id}-zoom` : c._id} // ép remount
-                                        animate={repliedComment === c._id ? { scale: [1, 1.05, 1] } : false}
+                                        animate={repliedComment === c._id && isCommentVisible ? { scale: [1, 1.05, 1] } : false}
                                         transition={{
                                             duration: 0.6,
                                             ease: "easeInOut",
@@ -311,6 +339,7 @@ const PostDetail = ({ onClose }) => {
                                         }}
                                     >
                                         <CommentRefractor
+                                            ref={repliedComment === c._id ? commentRef : null}
                                             comment={c}
                                             replyToComment={replyToComment}
                                             handleCommentReply={handleCommentReply}
@@ -324,9 +353,9 @@ const PostDetail = ({ onClose }) => {
                                             <div className="ml-5" key={reply._id}>
                                                 <motion.div
                                                     key={repliedComment === reply._id ? `${reply._id}-zoom` : reply._id} // ép remount
-                                                    animate={repliedComment === reply._id ? { scale: [1, 1.05, 1] } : false}
+                                                    animate={repliedComment === reply._id && isCommentVisible ? { scale: [1, 1.07, 1] } : false}
                                                     transition={{
-                                                        duration: 0.6,
+                                                        duration: 0.8,
                                                         ease: "easeInOut",
                                                     }}
                                                     onAnimationComplete={() => {
@@ -334,6 +363,7 @@ const PostDetail = ({ onClose }) => {
                                                     }}
                                                 >
                                                     <CommentRefractor
+                                                        ref={repliedComment === reply._id ? commentRef : null}
                                                         comment={reply}
                                                         replyToComment={replyToComment}
                                                         handleCommentReply={handleCommentReply}
