@@ -140,7 +140,6 @@ const authSlice = createSlice({
                 state.error = action.payload;
             })
 
-
             .addCase(unfollowUser.pending, (state) => {
                 state.status = 'loading';
                 state.error = null;

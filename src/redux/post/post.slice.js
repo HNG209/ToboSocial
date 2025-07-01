@@ -12,7 +12,7 @@ const getLocalStorageId = () => {
     return userFromStorage ? userFromStorage._id : null; // Lấy userId từ localStorage
 }
 
-export const fetchPostDetail = createAsyncThunk('posts/fetchPostDetail', async (postId, { rejectWithValue }) => {
+export const fetchPostDetail = createAsyncThunk('post/fetchPostDetail', async (postId, { rejectWithValue }) => {
     try {
         // fetch author
         const authorResponse = await fetchPostAuthorAPI(postId)
@@ -28,7 +28,7 @@ export const fetchPostDetail = createAsyncThunk('posts/fetchPostDetail', async (
     }
 });
 
-export const fetchMoreComments = createAsyncThunk('posts/fetchMoreComments', async (_, { getState, rejectWithValue }) => {
+export const fetchMoreComments = createAsyncThunk('post/fetchMoreComments', async (_, { getState, rejectWithValue }) => {
     try {
         const state = getState();
         const currentPage = state.selectedPost.page;
@@ -49,7 +49,7 @@ export const fetchMoreComments = createAsyncThunk('posts/fetchMoreComments', asy
 })
 
 
-export const fetchPost = createAsyncThunk('posts/fetchPost', async (postId, { getState, rejectWithValue }) => {
+export const fetchPost = createAsyncThunk('post/fetchPost', async (postId, { getState, rejectWithValue }) => {
     try {
         const state = getState();
         const postInProfile = state.profile.posts.find(post => post._id === postId);
@@ -63,11 +63,11 @@ export const fetchPost = createAsyncThunk('posts/fetchPost', async (postId, { ge
     }
 });
 
-export const fetchRepliesComment = createAsyncThunk('posts/fetchRepliesComment', async (commentId, { getState, rejectWithValue }) => {
+export const fetchRepliesComment = createAsyncThunk('post/fetchRepliesComment', async (commentId, { getState, rejectWithValue }) => {
     try {
         // lấy replyPage từ state, nếu không có thì mặc định là 1
         const state = getState();
-        const replyPage = state.selectedPost.comments.find(c => c._id === commentId)?.replyPage || 1;
+        const replyPage = state.post.current.comments.find(c => c._id === commentId)?.replyPage || 1;
         if (replyPage === -1) {
             return { commentId, replies: [], replyPage: -1 }; // nếu không có bình luận trả lời thì trả về mảng rỗng
         }
@@ -86,7 +86,7 @@ export const fetchRepliesComment = createAsyncThunk('posts/fetchRepliesComment',
     }
 });
 
-export const createComment = createAsyncThunk('posts/createComment', async (comment, { rejectWithValue }) => {
+export const createComment = createAsyncThunk('post/createComment', async (comment, { rejectWithValue }) => {
     try {
 
         const response = await createCommentAPI({
@@ -101,7 +101,7 @@ export const createComment = createAsyncThunk('posts/createComment', async (comm
     }
 });
 
-export const toggleLike = createAsyncThunk('posts/toggleLike', async (postId, { rejectWithValue }) => {
+export const toggleLike = createAsyncThunk('post/toggleLike', async (postId, { rejectWithValue }) => {
     try {
         const rs = await likeStatusAPIv2(postId, 'post');
         if (!rs.isLiked) {
@@ -116,7 +116,7 @@ export const toggleLike = createAsyncThunk('posts/toggleLike', async (postId, { 
     }
 });
 
-export const toggleCommentLike = createAsyncThunk('posts/toggleCommentLike', async (commentId, { rejectWithValue }) => {
+export const toggleCommentLike = createAsyncThunk('post/toggleCommentLike', async (commentId, { rejectWithValue }) => {
     try {
         const rs = await likeStatusAPIv2(commentId, 'comment');
 
@@ -132,10 +132,10 @@ export const toggleCommentLike = createAsyncThunk('posts/toggleCommentLike', asy
     }
 });
 
-export const deletePost = createAsyncThunk('posts/deletePost', async (_, { getState, rejectWithValue }) => {
+export const deletePost = createAsyncThunk('post/deletePost', async (_, { getState, rejectWithValue }) => {
     try {
         const state = getState();
-        const postId = state.selectedPost.post._id;
+        const postId = state.post.current._id;
         const rs = await deletePostAPI(postId);
 
         return { rs, postId };
@@ -145,11 +145,11 @@ export const deletePost = createAsyncThunk('posts/deletePost', async (_, { getSt
     }
 });
 
-const selectedPostSlice = createSlice({
-    name: 'selectedPost',
+const postSlice = createSlice({
+    name: 'post',
     initialState: {
         author: null, // thông tin tác giả của bài viết
-        post: {}, // chi tiết bài viết
+        current: {}, // chi tiết bài viết hiện tại
         comments: [], // danh sách bình luận của bài viết, đánh dấu đã like đối với người dùng hiện tại
         likers: [], // danh sách những người like bài viết
         status: 'idle', // Trạng thái tải dữ liệu
@@ -172,7 +172,7 @@ const selectedPostSlice = createSlice({
     extraReducers: (builder) => {
         builder
             .addCase(fetchPost.fulfilled, (state, action) => {
-                state.post = action.payload;
+                state.current = action.payload;
             })
 
             // ===== Fetch Posts by User =====
@@ -241,7 +241,7 @@ const selectedPostSlice = createSlice({
                 }
 
                 state.comments = [...state.comments, action.payload]; // nếu không có trường rootComment thì đây là bình luận gốc, thêm vào danh sách bình luận
-                state.post.commentCount = (state.post.commentCount || 0) + 1; // tăng số lượng bình luận của bài viết
+                state.current.commentCount = (state.current.commentCount || 0) + 1; // tăng số lượng bình luận của bài viết
 
                 state.error = null; // Reset error state
             })
@@ -281,9 +281,9 @@ const selectedPostSlice = createSlice({
 
             // Toggle post like
             .addCase(toggleLike.fulfilled, (state, action) => {
-                state.post.isLiked = action.payload.result.isLiked;
-                if (state.post) {
-                    state.post.likeCount = action.payload.result.isLiked ? state.post.likeCount + 1 : state.post.likeCount - 1;
+                state.current.isLiked = action.payload.result.isLiked;
+                if (state.current) {
+                    state.current.likeCount = action.payload.result.isLiked ? state.current.likeCount + 1 : state.current.likeCount - 1;
                 }
             })
 
@@ -332,5 +332,5 @@ const selectedPostSlice = createSlice({
     }
 })
 
-export const { clearReplyComments } = selectedPostSlice.actions;
-export default selectedPostSlice.reducer;
+export const { clearReplyComments } = postSlice.actions;
+export default postSlice.reducer;

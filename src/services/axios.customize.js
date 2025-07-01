@@ -5,6 +5,7 @@ const instance = axios.create({
     withCredentials: true // nếu dùng cookie refreshToken
 });
 
+// Kích hoạt khi client gửi request
 instance.interceptors.request.use(config => {
     // tự động thêm accessToken vào header Authorization nếu có
     const token = localStorage.getItem('accessToken');
@@ -16,6 +17,7 @@ instance.interceptors.request.use(config => {
     return Promise.reject(error);
 });
 
+// Kích hoạt khi server gửi response
 instance.interceptors.response.use(function (response) {
     if (response.data && response.data.errorCode === 0) {
         return response.data.result;

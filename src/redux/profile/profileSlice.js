@@ -1,6 +1,6 @@
 import { fetchPostByUserAPI, fetchPostByUserAPIV2, fetchProfilePosts, followUserAPI, getUserAPI, getUserAPIv2, getUserProfile, unfollowUserAPI, updateUserAPI } from "../../services/api.service";
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { deletePost, toggleLike } from "../post/selectedPostSlice";
+import { deletePost, toggleLike } from "../post/post.slice";
 
 export const fetchPostByUser = createAsyncThunk(
     'posts/fetchPostByUser',

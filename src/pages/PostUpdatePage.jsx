@@ -14,7 +14,7 @@ import { UploadOutlined, SendOutlined, DeleteOutlined, EditOutlined, CheckOutlin
 import axios from 'axios';
 import { createPostAPI, updatePostAPI } from '../services/api.service';
 import { useNavigate, useParams } from 'react-router-dom';
-import { fetchPost } from '../redux/post/selectedPostSlice';
+import { fetchPost } from '../redux/post/post.slice';
 import useGlobalNotification from '../hooks/useGlobalNotification';
 
 const { TextArea } = Input;

@@ -8,7 +8,7 @@ import Slider from 'react-slick';
 import 'slick-carousel/slick/slick.css';
 import 'slick-carousel/slick/slick-theme.css';
 import { useDispatch, useSelector } from 'react-redux';
-import { clearReplyComments, createComment, deletePost, fetchMoreComments, fetchPost, fetchPostDetail, fetchRepliesComment, toggleCommentLike, toggleLike } from '../../redux/post/selectedPostSlice';
+import { clearReplyComments, createComment, deletePost, fetchMoreComments, fetchPost, fetchPostDetail, fetchRepliesComment, toggleCommentLike, toggleLike } from '../../redux/post/post.slice';
 import { useNavigate, useParams } from 'react-router-dom';
 import { animate, motion } from "framer-motion";
 import CommentRefractor from '../refractor/CommentRefractor';
@@ -79,12 +79,12 @@ const PostDetail = ({ onClose }) => {
     const navigate = useNavigate();
 
     const authUser = useSelector((state) => state.auth.user)
-    const postDetail = useSelector((state) => state.selectedPost.post)
-    const postComments = useSelector((state) => state.selectedPost.comments)
-    const likeStatus = useSelector((state) => state.selectedPost.post.isLiked)
-    const status = useSelector((state) => state.selectedPost.status)
-    const commentLoading = useSelector((state) => state.selectedPost.isLoadingMoreComments)
-    const fetchMore = useSelector((state) => state.selectedPost.fetchMore) // check if there're more comments to load
+    const postDetail = useSelector((state) => state.post.current)
+    const postComments = useSelector((state) => state.post.comments)
+    const likeStatus = useSelector((state) => state.post.current.isLiked)
+    const status = useSelector((state) => state.post.status)
+    const commentLoading = useSelector((state) => state.post.isLoadingMoreComments)
+    const fetchMore = useSelector((state) => state.post.fetchMore) // check if there're more comments to load
 
     // const userData = useSelector((state) => state.profile.user); // current user's data
 

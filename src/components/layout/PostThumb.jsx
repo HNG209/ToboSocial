@@ -5,7 +5,7 @@ import {
 import PostDetail from './PostDetail';
 import { useCallback, useState } from 'react';
 import { useDispatch } from 'react-redux';
-import { fetchPostDetail, fetchPost } from '../../redux/post/selectedPostSlice';
+import { fetchPostDetail, fetchPost } from '../../redux/post/post.slice';
 import { Modal } from 'antd';
 
 export default function PostThumb({ post }) {

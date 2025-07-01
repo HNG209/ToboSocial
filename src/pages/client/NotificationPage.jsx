@@ -1,10 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { useSelector } from 'react-redux'; // Thêm useSelector
+import { useDispatch, useSelector } from 'react-redux'; // Thêm useSelector
 import { List, Avatar, Button, message, Typography, Space, Card, Tag, Row, Col } from 'antd';
 import { CheckCircleOutlined, EyeOutlined } from '@ant-design/icons';
 import { getUserNotificationsAPI, markNotificationAsReadAPI, markAllNotificationsAsReadAPI } from '../../services/admin.service';
 import moment from 'moment';
 import styled from 'styled-components';
+import { formatTime } from '../../components/refractor/CommentRefractor';
+import NotificationRefractor from '../../components/refractor/NotificationRefractor';
+import { fetchMoreNotifications } from '../../redux/notification/user.notifications.slice';
 
 const { Text } = Typography;
 
@@ -14,21 +17,6 @@ const NotificationContainer = styled.div`
     padding: 16px;
     background: #f5f5f5;
     min-height: 100vh;
-`;
-
-const NotificationCard = styled(Card)`
-    margin-bottom: 8px;
-    border-radius: 10px;
-    border: none;
-    background: ${props => (props.isRead ? '#fff' : '#f9fcff')};
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-    transition: all 0.2s;
-    &:hover {
-        box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
-    }
-    .ant-card-body {
-        padding: 12px 16px;
-    }
 `;
 
 const Header = styled(Row)`
@@ -42,83 +30,28 @@ const Header = styled(Row)`
 `;
 
 const NotificationPage = () => {
-    const [notifications, setNotifications] = useState([]);
-    const [total, setTotal] = useState(0);
+    // const [notifications, setNotifications] = useState([]);
     const [loading, setLoading] = useState(false);
-    const [pagination, setPagination] = useState({ current: 1, pageSize: 10 });
+    const [loadingMore, setLoadingMore] = useState(false);
 
-    const userId = useSelector((state) => state.auth.user?._id);
+    const dispatch = useDispatch();
 
-
-    const fetchNotifications = async () => {
-        if (!userId) {
-            message.error('Không tìm thấy thông tin người dùng. Vui lòng đăng nhập lại.');
-            return;
-        }
-
-        try {
-            setLoading(true);
-            const response = await getUserNotificationsAPI({
-                userId,
-                limit: pagination.pageSize,
-                skip: (pagination.current - 1) * pagination.pageSize,
-            });
-
-            // Debug response
-            console.log('API Response:', response);
-
-            // Xử lý response là mảng trực tiếp do axios.customize.js unwrap result
-            const notificationsData = Array.isArray(response) ? response : [];
-            setNotifications(prev =>
-                pagination.current === 1 ? notificationsData : [...prev, ...notificationsData]
-            );
-            // Vì response không có total, tạm dùng length. Nếu backend trả total, cần điều chỉnh
-            setTotal(notificationsData.length);
-        } catch (error) {
-            console.error('Error fetching notifications:', error);
-            message.error(error.message || 'Lỗi khi tải danh sách thông báo');
-        } finally {
-            setLoading(false);
-        }
+    const handleLoadMore = async () => {
+        dispatch(fetchMoreNotifications());
     };
+
+    const notifications = useSelector(state => state.userNotifications.notifications);
+    const loadingStatus = useSelector(state => state.userNotifications.status);
+    const more = useSelector(state => state.userNotifications.fetchMore);
 
     useEffect(() => {
-        fetchNotifications();
-    }, [pagination.current, pagination.pageSize, userId]); // Thêm userId vào dependency
-
-    const handleMarkAsRead = async (notificationId) => {
-        try {
-            await markNotificationAsReadAPI(notificationId);
-            message.success('Đã đánh dấu thông báo là đã xem');
-            setNotifications(prev =>
-                prev.map(notif =>
-                    notif._id === notificationId ? { ...notif, isRead: true } : notif
-                )
-            );
-        } catch (error) {
-            message.error(error.message || 'Lỗi khi đánh dấu thông báo');
-        }
-    };
+        if (loadingStatus === 'loading')
+            setLoadingMore(true)
+        else setLoadingMore(false);
+    }, [loadingStatus])
 
     const handleMarkAllAsRead = async () => {
-        if (!userId) {
-            message.error('Không tìm thấy thông tin người dùng.');
-            return;
-        }
 
-        try {
-            console.log(userId);
-
-            await markAllNotificationsAsReadAPI(userId); // Gửi userId
-            message.success('Đã đánh dấu tất cả thông báo là đã xem');
-            setNotifications(prev => prev.map(notif => ({ ...notif, isRead: true })));
-        } catch (error) {
-            message.error(error.message || 'Lỗi khi đánh dấu tất cả thông báo');
-        }
-    };
-
-    const handleLoadMore = () => {
-        setPagination(prev => ({ ...prev, current: prev.current + 1 }));
     };
 
     return (
@@ -149,82 +82,24 @@ const NotificationPage = () => {
                     loading={loading}
                     dataSource={notifications}
                     renderItem={item => (
-                        <NotificationCard isRead={item.isRead}>
-                            <List.Item
-                                actions={[
-                                    !item.isRead && (
-                                        <Button
-                                            key="mark-read"
-                                            type="text"
-                                            size="small"
-                                            icon={<CheckCircleOutlined />}
-                                            onClick={() => handleMarkAsRead(item._id)}
-                                            disabled={loading}
-                                            style={{ color: '#1890ff' }}
-                                        >
-                                            Đã xem
-                                        </Button>
-                                    ),
-                                    item.relatedEntity && item.relatedEntityModel === 'post' && (
-                                        <Button
-                                            key="view-post"
-                                            type="text"
-                                            size="small"
-                                            icon={<EyeOutlined />}
-                                            onClick={() => window.open(`/posts/${item.relatedEntity}`, '_blank')}
-                                            style={{ color: '#1890ff' }}
-                                        >
-                                            Xem
-                                        </Button>
-                                    ),
-                                ].filter(Boolean)}
-                            >
-                                <List.Item.Meta
-                                    avatar={
-                                        <Avatar
-                                            size={40}
-                                            style={{
-                                                backgroundColor: item.isRead ? '#e8ecef' : '#1890ff',
-                                                color: '#fff',
-                                            }}
-                                        >
-                                            {item.type === 'warning' ? '⚠️' : '🔔'}
-                                        </Avatar>
-                                    }
-                                    title={
-                                        <Space>
-                                            <Text strong={!item.isRead}>{item.title}</Text>
-                                            {!item.isRead && (
-                                                <Tag color="blue" style={{ borderRadius: '12px' }}>
-                                                    Mới
-                                                </Tag>
-                                            )}
-                                        </Space>
-                                    }
-                                    description={
-                                        <div>
-                                            <Text>{item.message}</Text>
-                                            <br />
-                                            <Text type="secondary" style={{ fontSize: 12 }}>
-                                                {moment(item.createdAt).fromNow()}
-                                            </Text>
-                                        </div>
-                                    }
-                                />
-                            </List.Item>
-                        </NotificationCard>
+                        <NotificationRefractor
+                            notification={item}
+                        />
                     )}
                     loadMore={
-                        total > notifications.length && (
-                            <div style={{ textAlign: 'center', marginTop: 16 }}>
+                        (notifications.length >= 10 && more) ? (
+                            <div style={{ textAlign: 'center', margin: '16px 0' }}>
                                 <Button
                                     onClick={handleLoadMore}
-                                    loading={loading}
-                                    disabled={loading}
-                                    style={{ borderRadius: '20px', padding: '4px 20px' }}
+                                    loading={loadingMore}
+                                    type="default"
                                 >
                                     Tải thêm
                                 </Button>
+                            </div>
+                        ) : (
+                            <div className='text-center text-xs text-gray-400'>
+                                đã hết thông báo để tải
                             </div>
                         )
                     }

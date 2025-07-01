@@ -7,19 +7,48 @@ import {
     UserOutlined,
     MenuOutlined,
 } from "@ant-design/icons";
-import { Dropdown, Menu, notification } from "antd";
+import { Badge, Drawer, Dropdown, Menu, message, notification } from "antd";
 import { NavLink, useNavigate } from "react-router-dom";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { getAuthUser, logout } from "../../redux/auth/authSlice";
 import tobologo from "../../assets/logo.png"
 import PostModal from "../PostModal";
 import { useState } from "react";
 import { useEffect } from "react";
+import socket from "../../socket";
+import { appendNotification } from "../../redux/notification/user.notifications.slice";
 
+// Sidebar khi kích thước md, lg
 const Sidebar = () => {
     const dispatch = useDispatch();
     const navigate = useNavigate();
     const [isOpen, setIsOpen] = useState(false);
+
+    const authUser = useSelector(state => state.auth.user);
+    const unRead = useSelector(state => state.userNotifications.unRead);
+
+    useEffect(() => {
+        if (!authUser) return;
+
+        socket.connect();
+
+        // Chỉ join sau khi đã connect thành công
+        socket.on('connect', () => {
+            socket.emit('join', authUser._id); // Gửi lại userId để vào đúng room
+        });
+
+        socket.on('notify', (data) => {
+            console.log('recieve', data);
+            dispatch(appendNotification(data));
+            message.info('[Socket] ' + data.message);
+        });
+
+        return () => {
+            socket.off('notify');
+            socket.off('connect');
+        };
+    }, [authUser]);
+
 
     // reload trang -> fetch các thông tin cần thiết vào redux state ở đây
     useEffect(() => {
@@ -59,7 +88,11 @@ const Sidebar = () => {
         { icon: <HomeOutlined />, label: "Home", to: "/" },
         { icon: <SearchOutlined />, label: "Search", to: "/search" },
         { icon: <CompassOutlined />, label: "Explore", to: "/explore" },
-        { icon: <BellOutlined />, label: "Notifications", to: "/notifications" },
+        {
+            icon:
+                <BellOutlined />
+            , label: "Notifications", to: "/notifications"
+        },
         { icon: <PlusOutlined />, label: "Create", to: "/create" },
         { icon: <UserOutlined />, label: "Profile", to: "/profile" },
         { icon: <MenuOutlined />, label: "More", to: "/more", dropdown: moreMenu },
@@ -84,7 +117,7 @@ const Sidebar = () => {
 
 
             {/* Menu items dời lên gần logo */}
-            <nav className="flex flex-col gap-4 items-center lg:items-start">
+            <nav className="flex flex-col gap-3 items-center lg:items-start">
                 {menuItems.map((item, idx) =>
                     item.dropdown ? (
                         <Dropdown key={idx} overlay={item.dropdown} trigger={["click"]}>
@@ -98,20 +131,27 @@ const Sidebar = () => {
                             key={idx}
                             to={item.to}
                             className={({ isActive }) =>
-                                `group flex items-center gap-4 px-4 py-2 rounded-xl cursor-pointer
-                        ${isActive
+                                `group flex items-center justify-center lg:justify-start gap-4 px-4 py-2 rounded-xl cursor-pointer
+                            ${isActive
                                     ? "bg-blue-100 w-full text-blue-500 font-semibold"
                                     : "text-blue-600 w-full hover:text-black hover:bg-gray-50"} 
-                        transition-all duration-200`
+                                transition-all duration-200`
                             }
                         >
-                            <span className="text-xl">{item.icon}</span>
+                            {
+                                item.label === 'Notifications' ?
+                                    <Badge size="small" count={unRead} overflowCount={99}>
+                                        <span className="text-xl text-blue-600 w-full hover:text-black hover:bg-gray-50">{item.icon}</span>
+                                    </Badge>
+                                    :
+                                    <span className="text-xl">{item.icon}</span>
+                            }
                             <span className="hidden lg:inline text-sm">{item.label}</span>
                         </NavLink>
                     )
                 )}
             </nav>
-        </aside>
+        </aside >
 
 
     );

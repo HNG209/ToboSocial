@@ -1,6 +1,6 @@
 import { EllipsisOutlined, HeartFilled, HeartOutlined, RollbackOutlined, TeamOutlined } from "@ant-design/icons"
 import { Avatar, Modal, Popover } from "antd"
-import { fetchRepliesComment, toggleCommentLike } from "../../redux/post/selectedPostSlice";
+import { fetchRepliesComment, toggleCommentLike } from "../../redux/post/post.slice";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import React, { forwardRef, use, useEffect, useState } from "react";
@@ -9,7 +9,7 @@ import CommentEditor from "./CommentEditor";
 import { showNotification } from "../../redux/notification/notificationSlice";
 import useGlobalNotification from "../../hooks/useGlobalNotification";
 
-const formatCommentTime = (createdAt) => {
+export const formatTime = (createdAt) => {
     const now = new Date();
     const created = new Date(createdAt);
     const diffMs = now - created;
@@ -48,7 +48,7 @@ const CommentRefractor = forwardRef(function CommentRefractor(
     const dispatch = useDispatch();
     const navigate = useNavigate();
 
-    const postUserId = useSelector(state => state.selectedPost.author._id)
+    const postUserId = useSelector(state => state.post.author._id)
     const authUserId = useSelector(state => state.auth.user._id)
 
     const toggleCmtLike = (commentId) => {
@@ -179,7 +179,7 @@ const CommentRefractor = forwardRef(function CommentRefractor(
             </div>
             {/* Formatted comment time in English */}
             <span className="text-xs text-gray-500 ml-10">
-                {formatCommentTime(comment.createdAt)}
+                {formatTime(comment.createdAt)}
                 {
                     comment?.countReply > 0 &&
                     <span onClick={() => {

@@ -57,7 +57,9 @@ const router = createBrowserRouter([
       },
       {
         path: "/notifications",
-        element: <PrivateRoute><NotificationPage /></PrivateRoute>,
+        element: <PrivateRoute>
+          <NotificationPage />
+        </PrivateRoute>,
       },
       {
         path: "/messages",
@@ -170,9 +172,9 @@ const router = createBrowserRouter([
 ReactDOM.createRoot(document.getElementById("root")).render(
   <ConfigProvider getPopupContainer={() => document.body}>
     {/* <AntdApp> */}
-      <Provider store={store}>
-        <RouterProvider router={router} />
-      </Provider>
+    <Provider store={store}>
+      <RouterProvider router={router} />
+    </Provider>
     {/* </AntdApp> */}
   </ConfigProvider>
 );

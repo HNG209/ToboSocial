@@ -7,6 +7,7 @@ import {
 } from "@ant-design/icons";
 import { NavLink } from "react-router-dom";
 
+// Bottom nav khi kích thước màn hình thu nhỏ
 const BottomNav = () => {
     const menuItems = [
         { icon: <HomeOutlined style={{ fontSize: '24px' }} />, label: "Home", to: "/" },

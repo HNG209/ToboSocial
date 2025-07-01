@@ -6,6 +6,9 @@ import Home from './pages/Home'
 import ProfileProvider from './components/context/ProfileContext'
 import UploadedImageProvider from './components/context/UploadedImageContext'
 import NotificationWatcher from './components/utils/NotificationWatcher'
+import { useEffect } from 'react'
+import socket from './socket'
+import { message } from 'antd'
 
 function App() {
 

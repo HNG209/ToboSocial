@@ -33,6 +33,7 @@
     "react-slick": "^0.30.3",
     "redux": "^5.0.1",
     "slick-carousel": "^1.8.1",
+    "socket.io-client": "^4.8.1",
     "styled-components": "^6.1.17",
     "swiper": "^11.2.6",
     "tailwindcss": "^4.1.3"
