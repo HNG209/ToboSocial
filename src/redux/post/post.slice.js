@@ -237,6 +237,7 @@ const postSlice = createSlice({
                         state.comments[rootCommentIndex].replies = [...state.comments[rootCommentIndex].replies, action.payload];
                     }
                     state.comments[rootCommentIndex].countReply = (state.comments[rootCommentIndex].countReply || 0) + 1;
+
                     return; // nếu là bình luận trả lời thì không cần thêm vào danh sách bình luận gốc
                 }
 

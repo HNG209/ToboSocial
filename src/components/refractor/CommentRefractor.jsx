@@ -197,6 +197,7 @@ const CommentRefractor = forwardRef(function CommentRefractor(
                             handleCommentReply({
                                 commentId: comment._id,
                                 username: comment.user.username,
+                                childOf: comment.childOf, // lấy cha của bình luận này
                                 // nếu trả lời bình luận gốc thì rootComment là id của bình luận gốc, nếu trả lời bình luận con thì rootComment là root của bình luận con
                                 rootComment: comment.rootComment === null ? comment._id : comment.rootComment
                             })

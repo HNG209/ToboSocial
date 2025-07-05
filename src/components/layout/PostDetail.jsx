@@ -170,8 +170,9 @@ const PostDetail = ({ onClose }) => {
             {
                 post: postDetail._id,
                 text: comment,
-                replyTo: replyToComment !== null ? replyToComment.commentId : null,
-                rootComment: replyToComment !== null ? replyToComment.rootComment : null
+                replyTo: replyToComment !== null ? replyToComment.commentId : null, // bình luận gốc thì replyTo = null
+                rootComment: replyToComment !== null ? replyToComment.rootComment : null, // bình luận gốc thì rootComment = null
+                childOf: replyToComment !== null ? [...replyToComment.childOf, replyToComment.commentId] : [] // bình luận gốc thì mảng childOf là rỗng
             }))
         setComment('')
     };
