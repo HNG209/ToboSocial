@@ -43,9 +43,9 @@ const createCommentAPI = (comment) => {
     return axios.post(URL_BACKEND, comment);
 }
 
-const fetchRepliesByCommentAPI = ({ commentId, userId }, page = 1, limit = 2) => {
+const fetchRepliesByCommentAPI = (commentId, page = 1, limit = 2) => {
     const URL_BACKEND = `/v1/api/comments/${commentId}/replies?page=${page}&limit=${limit}`;
-    return axios.post(URL_BACKEND, { userId });
+    return axios.post(URL_BACKEND);
 }
 
 const updateCommentAPI = (comment) => {

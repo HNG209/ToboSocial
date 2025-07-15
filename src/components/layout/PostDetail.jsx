@@ -377,20 +377,20 @@ const PostDetail = ({ onClose }) => {
                                         ))
                                     }
                                     {
-                                        c.replies && c.replies.length > 0 && c.replyPage !== -1 &&
+                                        c.replies && c.replies.length > 0 && c?.pagination?.hasNextPage &&
                                         <div className='text-xs text-gray-500 mt-2 text-center cursor-pointer hover:text-blue-500'
                                             onClick={() => handleViewMoreReplies(c._id)}>
                                             view more replies...
                                         </div>
                                     }
-                                    {
-                                        c.replyPage === -1 &&
+                                    {/* {
+                                        !c?.pagination?.hasNextPage &&
                                         <div
                                             onClick={() => handleShowLessReplies(c._id)}
                                             className='text-xs text-gray-500 mt-2 text-center cursor-pointer hover:text-blue-500'>
                                             show less
                                         </div>
-                                    }
+                                    } */}
                                 </div>
                             ))
 

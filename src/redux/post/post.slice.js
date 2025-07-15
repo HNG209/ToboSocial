@@ -67,19 +67,14 @@ export const fetchRepliesComment = createAsyncThunk('post/fetchRepliesComment', 
     try {
         // lấy replyPage từ state, nếu không có thì mặc định là 1
         const state = getState();
-        const replyPage = state.post.current.comments.find(c => c._id === commentId)?.replyPage || 1;
-        if (replyPage === -1) {
-            return { commentId, replies: [], replyPage: -1 }; // nếu không có bình luận trả lời thì trả về mảng rỗng
+        const pagination = state.post.comments.find(c => c._id === commentId)?.pagination;
+        if (pagination && !pagination.hasNextPage) {
+            return { commentId, replies: [] }; // nếu không có bình luận trả lời thì trả về mảng rỗng
         }
 
-        const response = await fetchRepliesByCommentAPI({ commentId, userId: getLocalStorageId() }, replyPage); // Lấy bình luận trả lời
+        const response = await fetchRepliesByCommentAPI(commentId, pagination ? pagination.page + 1 : 1); // Lấy bình luận trả lời
 
-        // nếu không có bình luận trả lời thì trả về mảng rỗng
-        if (!response || response.length === 0) {
-            return { commentId, replies: [], replyPage: -1 };
-        }
-
-        return { commentId, replies: response, replyPage }; // Trả về commentId và danh sách bình luận trả lời
+        return { commentId, replies: response }; // Trả về commentId và danh sách bình luận trả lời
     } catch (error) {
         console.error('Error in fetching replies comment:', error.message);
         return rejectWithValue(error.message);
@@ -255,27 +250,25 @@ const postSlice = createSlice({
 
             // Fetch replies comment
             .addCase(fetchRepliesComment.fulfilled, (state, action) => {
-                const { commentId, replies, replyPage } = action.payload;
+                const { commentId, replies } = action.payload;
+
                 const commentIndex = state.comments.findIndex(c => c._id === commentId);
 
-                if (commentIndex === -1) return; // nếu không tìm thấy bình luận thì không cần cập nhật
+                // nếu không tìm thấy bình luận thì không cần cập nhật
+                if (commentIndex === -1) return;
 
-                // nếu replyPage là -1 thì không có bình luận trả lời, không cần cập nhật
-                if (replies.length === 0 || replyPage === -1) {
-                    state.comments[commentIndex].replyPage = -1; // đánh dấu không có bình luận trả lời
-                    return;
-                }
+                // cập nhật bình luận trả lời
+                state.comments[commentIndex].replies = [...(state.comments[commentIndex].replies || []), ...replies.comments];
 
-                state.comments[commentIndex].replies = [...(state.comments[commentIndex].replies || []), ...replies]; // cập nhật bình luận trả lời
-                // // loại bỏ các bình luận trùng lặp trong replies
+                // loại bỏ các bình luận trùng lặp trong replies
                 const uniqueReplies = Array.from(new Set(state.comments[commentIndex].replies.map(r => r._id)))
                     .map(id => state.comments[commentIndex].replies.find(r => r._id === id));
-                state.comments[commentIndex].replies = uniqueReplies; // cập nhật lại bình luận trả lời với các bình luận không trùng lặp
 
-                // state.comments[commentIndex].countReply = (state.comments[commentIndex].countReply || 0) + replies.length; // cập nhật số lượng bình luận trả lời
+                // cập nhật lại bình luận trả lời với các bình luận không trùng lặp
+                state.comments[commentIndex].replies = uniqueReplies;
 
-                //thêm trường replyPage để quản lý phân trang của bình luận trả lời
-                state.comments[commentIndex].replyPage = replyPage + 1; // tăng replyPage lên 1 để lần sau gọi sẽ lấy trang tiếp theo
+                //thêm trường pagination để quản lý phân trang của bình luận trả lời
+                state.comments[commentIndex].pagination = replies.pagination;
 
                 state.status = 'succeeded'; // Đặt trạng thái thành succeeded
             })
