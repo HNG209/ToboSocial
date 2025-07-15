@@ -310,8 +310,17 @@ const postSlice = createSlice({
 
             // Delete comment (lắng nghe bên comment slice)
             .addCase(deleteComment.fulfilled, (state, action) => {
-                const commentId = action.payload.commentId;
-                state.comments = state.comments.filter(c => c._id !== commentId)
+                const { commentId, rs: { root } } = action.payload;
+
+                if (!root) // Không có root thì đây là comment gốc
+                    state.comments = state.comments.filter(c => c._id !== commentId)
+                else { // Nếu có root thì đây là comment trả lời
+                    const rootIndex = state.comments.findIndex(c => c._id === root);
+
+                    if (rootIndex !== -1) {
+                        state.comments[rootIndex].replies = state.comments[rootIndex].replies.filter(c => c._id !== commentId);
+                    }
+                }
             })
 
             // Update comment (lắng nghe bên comment slice)

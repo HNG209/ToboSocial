@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import ToBoSocialImage from '../assets/tobosocial.png';
-import { login } from '../redux/auth/authSlice';
+import { getAuthUser, login } from '../redux/auth/authSlice';
 
 function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
@@ -18,6 +18,16 @@ function LoginPage() {
   const navigate = useNavigate();
   const { status, error } = useSelector((state) => state.auth);
   const user = useSelector((state) => state.auth.user);
+
+  // reload trang -> fetch các thông tin cần thiết vào redux state ở đây
+  useEffect(() => {
+    dispatch(getAuthUser());
+  }, [])
+
+  useEffect(() => {
+    if (user)
+      navigate('/');
+  }, [user]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;

@@ -105,7 +105,7 @@ const getUserAPIv2 = (userId) => {
     return axios.get(URL_BACKEND);
 }
 
-const getUserProfile = () => { // nếu userId = null thì fallback về
+const getUserProfile = () => {
     const URL_BACKEND = `/v1/api/user/profile`;
     return axios.get(URL_BACKEND);
 }
