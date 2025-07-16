@@ -1,4 +1,4 @@
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
 import { Result, Button } from 'antd';
 import { Link, useNavigate } from 'react-router-dom';
 import { useEffect } from 'react';
@@ -8,9 +8,13 @@ const PrivateRoute = ({ children }) => {
     const navigate = useNavigate();
 
     useEffect(() => {
-        if (!user)
-            navigate('/login');
-    }, [user])
+        // delay 1s để đảm bảo redux state đã được cập nhật
+        const timer = setTimeout(() => {
+            if (!user)
+                navigate('/login');
+        }, 2000);
+        return () => clearTimeout(timer);
+    }, [user, navigate]);
 
     if (!user) {
         return (

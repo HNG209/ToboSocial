@@ -26,7 +26,8 @@ function LoginPage() {
 
   useEffect(() => {
     if (user)
-      navigate('/');
+      // navigate đến trang trước đó hoặc trang chính
+      navigate('/', { replace: true });
   }, [user]);
 
   const handleChange = (e) => {
