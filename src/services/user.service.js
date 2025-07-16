@@ -15,7 +15,7 @@ const registerAPI = async (username, email, password, fullName) => {
 
 // Đăng xuất
 const logoutAPI = () => {
-    const URL_BACKEND = `/v1/api/users/logout`;
+    const URL_BACKEND = `/v1/api/logout`;
     return axios.post(URL_BACKEND);
 };
 

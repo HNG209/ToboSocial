@@ -78,7 +78,7 @@ export const register = createAsyncThunk('auth/register', async ({ username, ema
 export const logout = createAsyncThunk('auth/logout', async (_, { rejectWithValue }) => {
     try {
         await logoutAPI();
-        localStorage.removeItem('user');
+        localStorage.removeItem('accessToken');
         return true;
     } catch (error) {
         return rejectWithValue(error.message || 'Logout failed');
