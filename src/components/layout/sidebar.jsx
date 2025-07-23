@@ -99,7 +99,7 @@ const Sidebar = () => {
     ];
 
     return (
-        <aside className="hidden md:flex flex-col w-20 lg:w-64 bg-white border-r shadow p-4">
+        <aside className="hidden md:flex flex-col my-5 ml-3 w-20 lg:w-64 bg-white rounded-lg shadow-2xl p-4">
             <PostModal isOpen={isOpen} onClose={() => setIsOpen(false)} />
 
             {/* Logo phóng to và có padding đều */}

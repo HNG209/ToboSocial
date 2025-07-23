@@ -173,17 +173,6 @@ const isFollowingAPI = (subjectId, followingId) => {
     return axios.get(URL_BACKEND);
 };
 
-
-
-const createPostAPI = async (postData) => {
-    try {
-        const response = await axios.post('/v1/api/post', postData);
-        return response;
-    } catch (error) {
-        throw new Error(error.message || 'Failed to create post');
-    }
-};
-
 const updatePostAPI = (postData) => {
     const URL_BACKEND = `v1/api/post`;
     return axios.patch(URL_BACKEND, postData);
@@ -217,7 +206,6 @@ export {
     likeStatusAPIv2,
     fetchLikersAPIv2,
     counLikeAPIv2,
-    createPostAPI,
     updatePostAPI,
     followUserAPI,
     unfollowUserAPI,

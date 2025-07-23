@@ -1,6 +1,4 @@
 import axios from "axios";
-import { reject } from "lodash";
-import { refreshTokenAPI } from "./auth.service";
 
 const instance = axios.create({
     baseURL: import.meta.env.VITE_BACKEND_URL,
